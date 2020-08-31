@@ -1,0 +1,7 @@
+server:
+  port: 8080
+
+executor.thread-count: 8
+executor.lang: "js"
+executor.blocking-timeout: 5
+

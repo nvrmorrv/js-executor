@@ -1,0 +1,17 @@
+server:
+  port: 8080
+
+executor:
+  thread-count: 8
+  lang: "js"
+  blocking-timeout: 5
+
+springdoc:
+  api-docs:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
