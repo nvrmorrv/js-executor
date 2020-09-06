@@ -38,5 +38,5 @@ import rest.api.dto.ScriptListResp;
 })
 @Target({METHOD})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface GetAllExecIdsApiEndpoint {
+public @interface GetExecIdsApiEndpoint {
 }

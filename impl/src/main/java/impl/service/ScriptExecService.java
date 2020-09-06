@@ -16,7 +16,5 @@ public interface ScriptExecService {
 
   void deleteExecution(String execId);
 
-  List<String> getFinishedExecutionIds();
-
-  List<String> getAllExecutionIds();
+  List<String> getExecutionIds();
 }

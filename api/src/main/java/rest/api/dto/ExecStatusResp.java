@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @AllArgsConstructor
 @Getter
-public class BlockingExecResp {
-  private final String resultStatus;
+public class ExecStatusResp implements ExecResp {
+  private final String status;
   private final String output;
 }

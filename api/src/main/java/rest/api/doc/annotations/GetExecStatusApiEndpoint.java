@@ -13,7 +13,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import rest.api.dto.ErrorResp;
-import rest.api.dto.StatusResp;
+import rest.api.dto.ExceptionResp;
+import rest.api.dto.ExecStatusResp;
 
 @Operation(
       summary = "Get execution status",
@@ -30,7 +31,7 @@ import rest.api.dto.StatusResp;
             content = {
                   @Content(
                         mediaType = "application/json",
-                        schema = @Schema(implementation = StatusResp.class))
+                        schema = @Schema(anyOf = {ExceptionResp.class, ExecStatusResp.class}))
             }),
       @ApiResponse(
             responseCode = "404",

@@ -14,7 +14,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import rest.api.dto.ErrorResp;
-import rest.api.dto.StatusResp;
 
 @Operation(
       summary = "Cancel execution",
@@ -27,12 +26,8 @@ import rest.api.dto.StatusResp;
 @ApiResponses(value = {
       @ApiResponse(
             responseCode = "200",
-            description = "OK",
-            content = {
-                  @Content(
-                        mediaType = "application/json",
-                        schema = @Schema(implementation = StatusResp.class))
-            }),
+            description = "OK"
+      ),
       @ApiResponse(
             responseCode = "404",
             description = "Error: unknown id",

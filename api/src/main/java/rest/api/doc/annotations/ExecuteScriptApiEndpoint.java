@@ -14,10 +14,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import rest.api.dto.BlockingExecResp;
 import rest.api.dto.ErrorResp;
+import rest.api.dto.ExceptionResp;
 import rest.api.dto.ExecReq;
+import rest.api.dto.ExecStatusResp;
 import rest.api.dto.ScriptId;
+import rest.api.dto.SyntaxErrorResp;
+import rest.api.dto.TimeoutErrorResp;
 
 @Operation(
       summary = "Execute script",
@@ -56,14 +59,14 @@ import rest.api.dto.ScriptId;
             content = {
                   @Content(
                         mediaType = "application/json",
-                        schema = @Schema(implementation = BlockingExecResp.class))
+                        schema = @Schema(anyOf = {ExceptionResp.class, ExecStatusResp.class}))
             }),
-      @ApiResponse(responseCode = "403",
-            description = "Error: blocking time is over",
+      @ApiResponse(responseCode = "400",
+            description = "Error: syntax error in script or time of blocking exec is out",
             content = {
                   @Content(
                         mediaType = "application/json",
-                        schema = @Schema(implementation = ErrorResp.class))
+                        schema = @Schema(anyOf = {SyntaxErrorResp.class, TimeoutErrorResp.class}))
       }),
       @ApiResponse(responseCode = "500",
             description = "Error: server error",

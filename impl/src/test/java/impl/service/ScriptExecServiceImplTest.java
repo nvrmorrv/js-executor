@@ -6,18 +6,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import impl.repositories.ExecRepository;
 import impl.repositories.entities.Execution;
+import impl.service.dto.CurExecInfo;
+import impl.service.dto.ExceptionResult;
 import impl.service.dto.ExecInfo;
 import impl.service.exceptions.DeletionException;
+import impl.service.exceptions.ExceptResException;
 import impl.service.exceptions.ExecTimeOutException;
+import impl.service.exceptions.SyntaxErrorException;
 import impl.service.exceptions.UnknownIdException;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,17 +30,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class ScriptExecServiceImplTest {
-  private ScriptExecServiceImpl service;
+  private static ScriptExecServiceImpl service;
   private final String SCRIPT = "console.log('hello')";
+  private final String SCRIPT_OUTPUT = "hello\n";
   private final String SCRIPT_ID = "id";
   private final long TIMEOUT = 1;
   private final TimeUnit TIME_UNIT = TimeUnit.MINUTES;
-  private final Execution EXECUTION = new Execution(
-        new AtomicReference<>(ExecStatus.QUEUE),
-        new ByteArrayOutputStream(),
-        new CompletableFuture<>(),
-        new CompletableFuture<>()
-  );
+  private Execution execution;
+  private final SyntaxErrorException SYN_ERR_EXCEPTION = new SyntaxErrorException("", "");
+  private final ExecTimeOutException TIMEOUT_EXCEPTION =
+        new ExecTimeOutException(TIMEOUT, TIME_UNIT, SCRIPT_OUTPUT);
+  private final ExceptResException EXCEPTION_RES_EXCEPTION = new ExceptResException("", "");
+
 
   @Mock
   public ScriptExecutor executor;
@@ -49,14 +52,19 @@ public class ScriptExecServiceImplTest {
   @BeforeEach
   public void setup() {
     service = new ScriptExecServiceImpl(repo, executor);
-    EXECUTION.getStatus().set(ExecStatus.QUEUE);
+    execution = new Execution(
+          new AtomicReference<>(impl.service.ExecStatus.QUEUE),
+          new ByteArrayOutputStream(),
+          new CompletableFuture<>(),
+          new CompletableFuture<>()
+    );
   }
 
-  public String getStatus(Execution exec) {
+  private String getStatus(Execution exec) {
     return exec.getStatus().get().name();
   }
 
-  public String getOutput(Execution exec) {
+  private String getOutput(Execution exec) {
     return exec.getOutputStream().toString();
   }
 
@@ -64,31 +72,53 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldPassOnAsyncExec() {
-    Mockito.when(executor.executeAsync(SCRIPT)).thenReturn(EXECUTION);
-    Mockito.when(repo.addExecution(EXECUTION)).thenReturn(SCRIPT_ID);
+    Mockito.when(repo.addExecution(Mockito.any())).thenReturn(SCRIPT_ID);
     assertEquals(SCRIPT_ID, service.executeScriptAsync(SCRIPT));
+  }
+
+  @Test
+  public void shouldFailOnAsyncExecWithSyntaxErrorScript() {
+    Mockito.doThrow(SYN_ERR_EXCEPTION).when(executor).checkScript(SCRIPT);
+    assertThatThrownBy(() -> service.executeScriptAsync(SCRIPT))
+          .isInstanceOf(SyntaxErrorException.class);
   }
 
   //    executeScript
 
   @Test
-  public void shouldPassOnBlockingExecWithGettingStatus()
-        throws InterruptedException, ExecutionException, TimeoutException {
-    Mockito.when(executor.execute(SCRIPT, TIMEOUT, TIME_UNIT)).thenReturn(EXECUTION);
+  public void shouldPassOnBlockingExec() {
+    Mockito.when(executor.execute(SCRIPT, TIMEOUT, TIME_UNIT)).thenReturn(SCRIPT_OUTPUT);
     ExecInfo res = service.executeScript(SCRIPT, TIMEOUT, TIME_UNIT);
-    assertEquals(getStatus(EXECUTION), res.getStatus());
-    assertEquals(getOutput(EXECUTION), res.getOutput());
+    assertEquals(CurExecInfo.class, res.getClass());
+    assertEquals(ExecStatus.DONE.name(), ((CurExecInfo)res).getStatus());
+    assertEquals(SCRIPT_OUTPUT, ((CurExecInfo)res).getOutput());
   }
 
   @Test
-  public void shouldFailOnBlockingExecWhenTimeout()
-        throws InterruptedException, ExecutionException, TimeoutException {
-    Mockito.when(executor.execute(SCRIPT, TIMEOUT, TIME_UNIT)).
-          thenThrow(new TimeoutException());
+  public void shouldPassOnBlockingExecWithException() {
+    Mockito.when(executor.execute(SCRIPT, TIMEOUT, TIME_UNIT))
+          .thenThrow(EXCEPTION_RES_EXCEPTION);
+    ExecInfo res = service.executeScript(SCRIPT, TIMEOUT, TIME_UNIT);
+    assertEquals(ExceptionResult.class, res.getClass());
+    assertEquals(ExecStatus.DONE_WITH_EXCEPTION.name(), ((ExceptionResult)res).getStatus());
+  }
+
+  @Test
+  public void shouldFailOnBlockingExecWhenTimeout() {
+    Mockito.when(executor.execute(SCRIPT, TIMEOUT, TIME_UNIT)).thenThrow(TIMEOUT_EXCEPTION);
     assertThatThrownBy(() ->
           service.executeScript(SCRIPT, TIMEOUT, TIME_UNIT))
           .isInstanceOf(ExecTimeOutException.class)
           .hasMessage(ExecTimeOutException.generateMessage(TIMEOUT, TIME_UNIT));
+  }
+
+  @Test
+  public void shouldFailOnBlockingExecWhenSyntaxError() {
+    Mockito.when(executor.execute(SCRIPT, TIMEOUT, TIME_UNIT)).
+          thenThrow(SYN_ERR_EXCEPTION);
+    assertThatThrownBy(() ->
+          service.executeScript(SCRIPT, TIMEOUT, TIME_UNIT))
+          .isInstanceOf(SyntaxErrorException.class);
   }
 
   //  cancelExecution
@@ -96,7 +126,7 @@ public class ScriptExecServiceImplTest {
   @Test
   public void shouldPassOnCancellation() {
     Mockito.when(repo.getExecution(SCRIPT_ID))
-          .thenReturn(Optional.of(EXECUTION));
+          .thenReturn(Optional.of(execution));
     assertThatCode(() -> service.cancelExecution(SCRIPT_ID))
           .doesNotThrowAnyException();
   }
@@ -115,17 +145,17 @@ public class ScriptExecServiceImplTest {
   @Test
   public void shouldFailOnDeletionOfNotCancelledExec() {
     Mockito.when(repo.getExecution(SCRIPT_ID))
-          .thenReturn(Optional.of(EXECUTION));
+          .thenReturn(Optional.of(execution));
     assertThatThrownBy(() -> service.deleteExecution(SCRIPT_ID))
           .isInstanceOf(DeletionException.class)
           .hasMessage(DeletionException.generateMessage(SCRIPT_ID));
   }
 
   @Test
-  public void shouldPassOnDeletionOfCancelledExec() {
-    EXECUTION.getStatus().set(ExecStatus.DONE);
+  public void shouldPassOnDeletionOfFinishedExec() {
+    execution.getComputation().complete(null);
     Mockito.when(repo.getExecution(SCRIPT_ID))
-          .thenReturn(Optional.of(EXECUTION));
+          .thenReturn(Optional.of(execution));
     assertThatCode(() -> service.deleteExecution(SCRIPT_ID))
           .doesNotThrowAnyException();
   }
@@ -143,11 +173,22 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldPassOnGettingStatus() {
-    Mockito.when(repo.getExecution(SCRIPT_ID)).
-          thenReturn(Optional.of(EXECUTION));
+    Mockito.when(repo.getExecution(SCRIPT_ID)).thenReturn(Optional.of(execution));
+    execution.getComputation().complete(null);
+    execution.getStatus().set(ExecStatus.DONE);
     ExecInfo status = service.getExecutionStatus(SCRIPT_ID);
-    assertEquals(getStatus(EXECUTION), status.getStatus());
-    assertEquals(getOutput(EXECUTION), status.getOutput());
+    assertEquals(CurExecInfo.class, status.getClass());
+    assertEquals(getStatus(execution), ((CurExecInfo)status).getStatus());
+    assertEquals(getOutput(execution), ((CurExecInfo)status).getOutput());
+  }
+
+  @Test
+  public void shouldPassOnGettingExceptionStatus() {
+    Mockito.when(repo.getExecution(SCRIPT_ID)).thenReturn(Optional.of(execution));
+    execution.getComputation().completeExceptionally(EXCEPTION_RES_EXCEPTION);
+    ExecInfo status = service.getExecutionStatus(SCRIPT_ID);
+    assertEquals(ExceptionResult.class, status.getClass());
+    assertEquals(ExecStatus.DONE_WITH_EXCEPTION.name(), ((ExceptionResult)status).getStatus());
   }
 
   @Test
@@ -164,20 +205,9 @@ public class ScriptExecServiceImplTest {
   @Test
   public void shouldPassOnGettingExecIds() {
     Mockito.when(repo.getAllIds()).thenReturn(Set.of(SCRIPT_ID));
-    List<String> list = service.getAllExecutionIds();
+    List<String> list = service.getExecutionIds();
     assertEquals(1, list.size());
     assertEquals(SCRIPT_ID, list.get(0));
-  }
-
-  //    getAllFinishedExecutionIds
-
-  @Test
-  public void shouldPassOnGettingFinishedExecIds() {
-    Mockito.when(repo.getAllIds()).thenReturn(Set.of(SCRIPT_ID));
-    Mockito.when(repo.getExecution(SCRIPT_ID)).
-          thenReturn(Optional.of(EXECUTION));
-    List<String> list = service.getFinishedExecutionIds();
-    assertEquals(0, list.size());
   }
 
 }

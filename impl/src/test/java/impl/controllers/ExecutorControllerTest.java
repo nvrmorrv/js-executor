@@ -11,9 +11,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import impl.service.ExecStatus;
 import impl.service.ScriptExecService;
-import impl.service.dto.ExecInfo;
+import impl.service.dto.CurExecInfo;
+import impl.service.dto.ExceptionResult;
 import impl.service.exceptions.DeletionException;
 import impl.service.exceptions.ExecTimeOutException;
+import impl.service.exceptions.SyntaxErrorException;
 import impl.service.exceptions.UnknownIdException;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
@@ -36,8 +38,11 @@ import rest.api.dto.ExecReq;
 public class ExecutorControllerTest {
   private final String EXEC_ID = "id";
   private final String SCRIPT = "console.log('hello')";
-  private final ExecInfo RESULT =
-        new ExecInfo(ExecStatus.DONE.name(), "hello");
+  private final CurExecInfo RESULT =
+        new CurExecInfo(impl.service.ExecStatus.DONE.name(), "hello");
+  private final ExceptionResult EX_RESULT =
+        new ExceptionResult(ExecStatus.DONE_WITH_EXCEPTION.name(), "", "");
+  private final SyntaxErrorException SYN_ERR_EXCEPTION = new SyntaxErrorException("", "");
 
   @Autowired
   private MockMvc mvc;
@@ -50,7 +55,7 @@ public class ExecutorControllerTest {
 
 
   @Test
-  public void shouldPassOnPerformingScriptAsync() throws Exception {
+  public void shouldPassOnAsyncPerformingScript() throws Exception {
     String json = mapper.writeValueAsString(new ExecReq(SCRIPT));
     Mockito.when(service.executeScriptAsync(SCRIPT)).thenReturn(EXEC_ID);
     mvc.perform(
@@ -64,7 +69,21 @@ public class ExecutorControllerTest {
   }
 
   @Test
-  public void shouldPassOnPerformingScriptWithBlocking() throws Exception {
+  public void shouldFailOnAsyncPerformingScriptWithSyntaxError() throws Exception {
+    String json = mapper.writeValueAsString(new ExecReq(SCRIPT));
+    Mockito.when(service.executeScriptAsync(SCRIPT)).thenThrow(SYN_ERR_EXCEPTION);
+    mvc.perform(
+          post("/executor/js/script")
+                .content(json)
+                .queryParam("blocking", "false")
+                .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().is(400))
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.error", Matchers.is("Syntax error")));
+  }
+
+  @Test
+  public void shouldPassOnBlockingPerformingScript() throws Exception {
     String json = mapper.writeValueAsString(new ExecReq(SCRIPT));
     Mockito.when(
           service.executeScript(
@@ -79,42 +98,92 @@ public class ExecutorControllerTest {
                 .contentType(MediaType.APPLICATION_JSON))
           .andExpect(status().is(200))
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-          .andExpect(jsonPath("$.resultStatus", Matchers.is(RESULT.getStatus())))
+          .andExpect(jsonPath("$.status", Matchers.is(RESULT.getStatus())))
           .andExpect(jsonPath("$.output", Matchers.is(RESULT.getOutput())));
   }
 
   @Test
-  public void shouldFailOnPerformingScriptWithBlockingWhenTimeout() throws Exception {
+  public void shouldPassOnBlockingPerformingScriptWithException() throws Exception {
     String json = mapper.writeValueAsString(new ExecReq(SCRIPT));
-    long timeout = 5;
+    Mockito.when(
+          service.executeScript(
+                Mockito.eq(SCRIPT),
+                Mockito.anyLong(),
+                Mockito.any()))
+          .thenReturn(EX_RESULT);
+    mvc.perform(
+          post("/executor/js/script")
+                .content(json)
+                .queryParam("blocking", "true")
+                .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().is(200))
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.status", Matchers.is(EX_RESULT.getStatus())))
+          .andExpect(jsonPath("$.message", Matchers.is(EX_RESULT.getMessage())));
+  }
+
+
+  @Test
+  public void shouldFailOnBlockingPerformingScriptWhenTimeout() throws Exception {
+    String json = mapper.writeValueAsString(new ExecReq(SCRIPT));
+    long timeout = 1;
     TimeUnit timeUnit = TimeUnit.MINUTES;
     Mockito.when(
           service.executeScript(
                 Mockito.eq(SCRIPT),
                 Mockito.anyLong(),
                 Mockito.any()))
-          .thenThrow(new ExecTimeOutException(timeout, timeUnit));
+          .thenThrow(new ExecTimeOutException(timeout, timeUnit, ""));
     mvc.perform(
           post("/executor/js/script")
                 .content(json)
                 .queryParam("blocking", "true")
                 .contentType(MediaType.APPLICATION_JSON))
-          .andExpect(status().is(403))
+          .andExpect(status().is(400))
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.error",
                 Matchers.is(ExecTimeOutException.generateMessage(timeout, timeUnit))));
   }
 
   @Test
+  public void shouldFailOnBlockingPerformingScriptWithSyntaxError() throws Exception {
+    String json = mapper.writeValueAsString(new ExecReq(SCRIPT));
+    Mockito.when(
+          service.executeScript(
+                Mockito.eq(SCRIPT),
+                Mockito.anyLong(),
+                Mockito.any()))
+          .thenThrow(SYN_ERR_EXCEPTION);
+    mvc.perform(
+          post("/executor/js/script")
+                .content(json)
+                .queryParam("blocking", "true")
+                .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().is(400))
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.error", Matchers.is("Syntax error")));
+  }
+
+  @Test
   public void shouldPassOnGettingStatus() throws Exception {
-    ExecInfo status = new ExecInfo(ExecStatus.QUEUE.name(), "");
-    Mockito.when(service.getExecutionStatus(EXEC_ID)).thenReturn(status);
+    Mockito.when(service.getExecutionStatus(EXEC_ID)).thenReturn(RESULT);
     mvc.perform(
           get("/executor/js/script/" + EXEC_ID))
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-          .andExpect(jsonPath("$.status", Matchers.is(status.getStatus())))
-          .andExpect(jsonPath("$.output", Matchers.is(status.getOutput())));
+          .andExpect(jsonPath("$.status", Matchers.is(RESULT.getStatus())))
+          .andExpect(jsonPath("$.output", Matchers.is(RESULT.getOutput())));
+  }
+
+  @Test
+  public void shouldPassOnGettingStatusWhenException() throws Exception {
+    Mockito.when(service.getExecutionStatus(EXEC_ID)).thenReturn(EX_RESULT);
+    mvc.perform(
+          get("/executor/js/script/" + EXEC_ID))
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.status", Matchers.is(EX_RESULT.getStatus())))
+          .andExpect(jsonPath("$.output", Matchers.is(EX_RESULT.getOutput())));
   }
 
   @Test
@@ -181,7 +250,7 @@ public class ExecutorControllerTest {
 
   @Test
   public void shouldPassOnGettingExecList() throws Exception {
-    Mockito.when(service.getAllExecutionIds())
+    Mockito.when(service.getExecutionIds())
           .thenReturn(Collections.singletonList(EXEC_ID));
     mvc.perform(
           get("/executor/js/script-list"))
@@ -190,17 +259,4 @@ public class ExecutorControllerTest {
           .andExpect(jsonPath("$.scripts.[0].id",
                 Matchers.is(EXEC_ID)));
   }
-
-  @Test
-  public void shouldPassOnGettingFinishedExecList() throws Exception {
-    Mockito.when(service.getFinishedExecutionIds())
-          .thenReturn(Collections.singletonList(EXEC_ID));
-    mvc.perform(
-          get("/executor/js/script-list/finished"))
-          .andExpect(status().isOk())
-          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-          .andExpect(jsonPath("$.scripts.[0].id",
-                Matchers.is(EXEC_ID)));
-  }
-
 }
