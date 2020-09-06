@@ -2,12 +2,12 @@ package impl.service;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import impl.repositories.ExecRepository;
 import impl.repositories.entities.Execution;
-import impl.service.dto.CurExecInfo;
-import impl.service.dto.ExceptionResult;
 import impl.service.dto.ExecInfo;
 import impl.service.exceptions.DeletionException;
 import impl.service.exceptions.ExceptResException;
@@ -89,9 +89,9 @@ public class ScriptExecServiceImplTest {
   public void shouldPassOnBlockingExec() {
     Mockito.when(executor.execute(SCRIPT, TIMEOUT, TIME_UNIT)).thenReturn(SCRIPT_OUTPUT);
     ExecInfo res = service.executeScript(SCRIPT, TIMEOUT, TIME_UNIT);
-    assertEquals(CurExecInfo.class, res.getClass());
-    assertEquals(ExecStatus.DONE.name(), ((CurExecInfo)res).getStatus());
-    assertEquals(SCRIPT_OUTPUT, ((CurExecInfo)res).getOutput());
+    assertFalse(res.getMessage().isPresent());
+    assertEquals(ExecStatus.DONE.name(), res.getStatus());
+    assertEquals(SCRIPT_OUTPUT, res.getOutput());
   }
 
   @Test
@@ -99,8 +99,8 @@ public class ScriptExecServiceImplTest {
     Mockito.when(executor.execute(SCRIPT, TIMEOUT, TIME_UNIT))
           .thenThrow(EXCEPTION_RES_EXCEPTION);
     ExecInfo res = service.executeScript(SCRIPT, TIMEOUT, TIME_UNIT);
-    assertEquals(ExceptionResult.class, res.getClass());
-    assertEquals(ExecStatus.DONE_WITH_EXCEPTION.name(), ((ExceptionResult)res).getStatus());
+    assertTrue(res.getMessage().isPresent());
+    assertEquals(ExecStatus.DONE_WITH_EXCEPTION.name(), res.getStatus());
   }
 
   @Test
@@ -177,9 +177,9 @@ public class ScriptExecServiceImplTest {
     execution.getComputation().complete(null);
     execution.getStatus().set(ExecStatus.DONE);
     ExecInfo status = service.getExecutionStatus(SCRIPT_ID);
-    assertEquals(CurExecInfo.class, status.getClass());
-    assertEquals(getStatus(execution), ((CurExecInfo)status).getStatus());
-    assertEquals(getOutput(execution), ((CurExecInfo)status).getOutput());
+    assertFalse(status.getMessage().isPresent());
+    assertEquals(getStatus(execution), status.getStatus());
+    assertEquals(getOutput(execution), status.getOutput());
   }
 
   @Test
@@ -187,8 +187,8 @@ public class ScriptExecServiceImplTest {
     Mockito.when(repo.getExecution(SCRIPT_ID)).thenReturn(Optional.of(execution));
     execution.getComputation().completeExceptionally(EXCEPTION_RES_EXCEPTION);
     ExecInfo status = service.getExecutionStatus(SCRIPT_ID);
-    assertEquals(ExceptionResult.class, status.getClass());
-    assertEquals(ExecStatus.DONE_WITH_EXCEPTION.name(), ((ExceptionResult)status).getStatus());
+    assertTrue(status.getMessage().isPresent());
+    assertEquals(ExecStatus.DONE_WITH_EXCEPTION.name(), status.getStatus());
   }
 
   @Test

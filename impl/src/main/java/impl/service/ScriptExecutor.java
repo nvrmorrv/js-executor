@@ -60,7 +60,7 @@ public class ScriptExecutor {
     }
   }
 
-  @Scheduled(fixedRate = 3000)
+  @Scheduled(fixedRate = 100)
   public void checkTimeoutAndInterrupt() {
     blockingExecs.stream()
           .filter(exec -> exec.getExecDuration()

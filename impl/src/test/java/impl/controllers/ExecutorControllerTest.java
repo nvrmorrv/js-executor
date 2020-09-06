@@ -11,13 +11,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import impl.service.ExecStatus;
 import impl.service.ScriptExecService;
-import impl.service.dto.CurExecInfo;
-import impl.service.dto.ExceptionResult;
+import impl.service.dto.ExecInfo;
 import impl.service.exceptions.DeletionException;
 import impl.service.exceptions.ExecTimeOutException;
 import impl.service.exceptions.SyntaxErrorException;
 import impl.service.exceptions.UnknownIdException;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -38,10 +38,10 @@ import rest.api.dto.ExecReq;
 public class ExecutorControllerTest {
   private final String EXEC_ID = "id";
   private final String SCRIPT = "console.log('hello')";
-  private final CurExecInfo RESULT =
-        new CurExecInfo(impl.service.ExecStatus.DONE.name(), "hello");
-  private final ExceptionResult EX_RESULT =
-        new ExceptionResult(ExecStatus.DONE_WITH_EXCEPTION.name(), "", "");
+  private final ExecInfo RESULT =
+        new ExecInfo(impl.service.ExecStatus.DONE.name(), "hello", Optional.empty());
+  private final ExecInfo EX_RESULT =
+        new ExecInfo(ExecStatus.DONE_WITH_EXCEPTION.name(), "hello", Optional.of(""));
   private final SyntaxErrorException SYN_ERR_EXCEPTION = new SyntaxErrorException("", "");
 
   @Autowired
@@ -119,7 +119,7 @@ public class ExecutorControllerTest {
           .andExpect(status().is(200))
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.status", Matchers.is(EX_RESULT.getStatus())))
-          .andExpect(jsonPath("$.message", Matchers.is(EX_RESULT.getMessage())));
+          .andExpect(jsonPath("$.message", Matchers.is(EX_RESULT.getMessage().get())));
   }
 
 

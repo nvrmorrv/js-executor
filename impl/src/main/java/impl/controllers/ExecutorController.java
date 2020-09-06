@@ -1,8 +1,6 @@
 package impl.controllers;
 
 import impl.service.ScriptExecService;
-import impl.service.dto.CurExecInfo;
-import impl.service.dto.ExceptionResult;
 import impl.service.dto.ExecInfo;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -100,14 +98,10 @@ public class ExecutorController implements ExecutorRestApi {
   }
 
   private ExecResp getExecResp(ExecInfo res) {
-    if(res.getClass() == CurExecInfo.class) {
-      CurExecInfo info  = (CurExecInfo) res;
-      return new ExecStatusResp(info.getStatus(), info.getOutput());
+    if(res.getMessage().isPresent()) {
+      return new ExceptionResp(res.getStatus(), res.getMessage().get(), res.getOutput());
     } else {
-      ExceptionResult result = (ExceptionResult) res;
-      return new ExceptionResp(result.getStatus(),
-            result.getMessage(), result.getOutput());
+      return new ExecStatusResp(res.getStatus(), res.getOutput());
     }
   }
-
 }

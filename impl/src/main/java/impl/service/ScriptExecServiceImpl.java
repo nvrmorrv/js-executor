@@ -2,8 +2,6 @@ package impl.service;
 
 import impl.repositories.ExecRepository;
 import impl.repositories.entities.Execution;
-import impl.service.dto.ExceptionResult;
-import impl.service.dto.CurExecInfo;
 import impl.service.dto.ExecInfo;
 import impl.service.exceptions.DeletionException;
 import impl.service.exceptions.ExceptResException;
@@ -11,6 +9,7 @@ import impl.service.exceptions.UnknownIdException;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -34,10 +33,10 @@ public class ScriptExecServiceImpl implements ScriptExecService {
   public ExecInfo executeScript(String script, long execTimeout, TimeUnit unit) {
     try {
       String output = executor.execute(script, execTimeout, unit);
-      return new CurExecInfo(ExecStatus.DONE.name(), output);
+      return new ExecInfo(ExecStatus.DONE.name(), output, Optional.empty());
     } catch (ExceptResException ex) {
-      return new ExceptionResult(ExecStatus.DONE_WITH_EXCEPTION.name(),
-            ex.getMessage(), ex.getOutput());
+      return new ExecInfo(ExecStatus.DONE_WITH_EXCEPTION.name(), ex.getOutput(),
+            Optional.of(ex.getExceptionMessage()));
     }
   }
 
@@ -49,13 +48,14 @@ public class ScriptExecServiceImpl implements ScriptExecService {
         exec.getComputation().get();
       } catch (ExecutionException ex) {
         ExceptResException e = (ExceptResException) ex.getCause();
-        return new ExceptionResult(ExecStatus.DONE_WITH_EXCEPTION.name(),
-              e.getMessage(), e.getOutput());
+        return new ExecInfo(ExecStatus.DONE_WITH_EXCEPTION.name(), e.getOutput(),
+              Optional.of(e.getExceptionMessage()));
       }
     }
-    return new CurExecInfo(
+    return new ExecInfo(
           exec.getStatus().get().name(),
-          ScriptExecutor.getOutput(exec.getOutputStream()));
+          ScriptExecutor.getOutput(exec.getOutputStream()),
+          Optional.empty());
   }
 
   @SneakyThrows

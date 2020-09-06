@@ -32,7 +32,6 @@ dependencies {
   implementation 'org.graalvm.js:js:20.2.0'
   implementation group: 'org.springdoc', name: 'springdoc-openapi-ui', version: '1.4.5'
 
-
   implementation project(':api')
 }
 
