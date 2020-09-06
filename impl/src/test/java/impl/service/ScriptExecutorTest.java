@@ -1,6 +1,7 @@
 package impl.service;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import impl.repositories.entities.Execution;
@@ -194,4 +195,18 @@ public class ScriptExecutorTest {
           .isInstanceOf(TimeoutException.class);
     executor.cancelExec(execution);
   }
+
+  // checkScript
+  @Test
+  public void shouldPassOnCheckingScript() {
+    assertThatCode(() -> executor.checkScript(FINITE_SCRIPT))
+          .doesNotThrowAnyException();
+  }
+
+  @Test
+  public void shouldFailOnCheckingScriptWithSyntaxError() {
+    assertThatThrownBy(() -> executor.checkScript(SCRIPT_WITH_SYNTAX_ERROR))
+          .isInstanceOf(SyntaxErrorException.class);
+  }
+
 }
