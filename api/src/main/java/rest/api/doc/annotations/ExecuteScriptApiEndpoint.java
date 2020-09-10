@@ -14,7 +14,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import rest.api.dto.ErrorResp;
+
+import rest.api.doc.annotations.resp.InternalSerErrResp;
 import rest.api.dto.ExceptionResp;
 import rest.api.dto.ExecReq;
 import rest.api.dto.ExecStatusResp;
@@ -67,15 +68,9 @@ import rest.api.dto.TimeoutErrorResp;
                   @Content(
                         mediaType = "application/json",
                         schema = @Schema(anyOf = {SyntaxErrorResp.class, TimeoutErrorResp.class}))
-      }),
-      @ApiResponse(responseCode = "500",
-            description = "Error: server error",
-            content = {
-                  @Content(
-                        mediaType = "application/json",
-                        schema = @Schema(implementation = ErrorResp.class))
       })
 })
+@InternalSerErrResp
 @Target({METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ExecuteScriptApiEndpoint {

@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import rest.api.ExecutorRestApi;
+import rest.api.doc.annotations.CancelExecApiEndPoint;
 import rest.api.doc.annotations.ExecuteScriptApiEndpoint;
 import rest.api.dto.*;
 
@@ -71,7 +72,8 @@ public class ExecutorController {
       generator.writeStartObject();
       generator.writeFieldName("output");
       try {
-        service.executeScript(body.getScript(), outputStream);
+       // service.executeScript(body.getScript(), outputStream);
+        outputStream.write("hello".getBytes());
         generator.writeEndObject();
       } catch (ExceptResException ex) {
         generator.writeEndObject();
@@ -88,6 +90,7 @@ public class ExecutorController {
     return getExecResp(info);
   }
 
+  @CancelExecApiEndPoint
   @PutMapping("/script/{id}")
   @ResponseStatus(HttpStatus.OK)
   public void cancelExecution(@PathVariable(name = "id") String scriptId) {

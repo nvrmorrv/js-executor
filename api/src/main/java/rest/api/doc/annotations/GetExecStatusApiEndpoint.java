@@ -12,6 +12,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
+import rest.api.doc.annotations.resp.InternalSerErrResp;
+import rest.api.doc.annotations.resp.NotFoundResp;
 import rest.api.dto.ErrorResp;
 import rest.api.dto.ExceptionResp;
 import rest.api.dto.ExecStatusResp;
@@ -24,32 +27,16 @@ import rest.api.dto.ExecStatusResp;
             in = ParameterIn.PATH,
             required = true
       )})
-@ApiResponses(value = {
-      @ApiResponse(
-            responseCode = "200",
-            description = "OK",
-            content = {
-                  @Content(
+@ApiResponse(
+        responseCode = "200",
+        description = "OK",
+        content = {
+                @Content(
                         mediaType = "application/json",
                         schema = @Schema(anyOf = {ExceptionResp.class, ExecStatusResp.class}))
-            }),
-      @ApiResponse(
-            responseCode = "404",
-            description = "Error: unknown id",
-            content = {
-                  @Content(
-                        mediaType = "application/json",
-                        schema = @Schema(implementation = ErrorResp.class))
-            }),
-      @ApiResponse(
-            responseCode = "500",
-            description = "Error: server error",
-            content = {
-                  @Content(
-                        mediaType = "application/json",
-                        schema = @Schema(implementation = ErrorResp.class))
-            })
-})
+        })
+@NotFoundResp
+@InternalSerErrResp
 @Target({METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface GetExecStatusApiEndpoint {

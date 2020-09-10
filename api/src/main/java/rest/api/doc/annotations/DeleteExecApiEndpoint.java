@@ -8,10 +8,13 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
+import rest.api.doc.annotations.resp.InternalSerErrResp;
+import rest.api.doc.annotations.resp.NotFoundResp;
+import rest.api.doc.annotations.resp.OkEmptyResp;
 import rest.api.dto.ErrorResp;
 
 @Operation(
@@ -22,35 +25,16 @@ import rest.api.dto.ErrorResp;
             in = ParameterIn.PATH,
             required = true
       )})
-@ApiResponses(value = {
-      @ApiResponse(
-            responseCode = "200",
-            description = "OK"
-      ),
-      @ApiResponse(
-            responseCode = "404",
-            description = "Error: unknown id",
-            content = {
-                  @Content(
+@ApiResponse(
+        responseCode = "405",
+        description = "Error: attempt to delete running execution",
+        content = {
+                @Content(
                         mediaType = "application/json",
-                        schema = @Schema(implementation = ErrorResp.class))
-            }),
-      @ApiResponse(
-            responseCode = "405",
-            description = "Error: attempt to delete running execution",
-            content = {
-                  @Content(
-                        mediaType = "application/json",
-                        schema = @Schema(implementation = ErrorResp.class)) }),
-      @ApiResponse(
-            responseCode = "500",
-            description = "Error: server error",
-            content = {
-                  @Content(
-                        mediaType = "application/json",
-                        schema = @Schema(implementation = ErrorResp.class))
-            })
-})
+                        schema = @Schema(implementation = ErrorResp.class)) })
+@OkEmptyResp
+@NotFoundResp
+@InternalSerErrResp
 @Target({METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface DeleteExecApiEndpoint {

@@ -40,6 +40,7 @@ public class ScriptExecutor {
     try (Context context = createContext(outputStream)) {
       context.eval(lang, script);
     } catch (PolyglotException e) {
+      e.printStackTrace();
       if (e.isSyntaxError()) {
         throw new SyntaxErrorException(e.getMessage(),
                 e.getSourceLocation().getCharacters().toString());
@@ -119,6 +120,7 @@ public class ScriptExecutor {
   private Context createContext(OutputStream outputStream) {
     return Context.newBuilder(lang)
           .out(outputStream)
+            .out(new ByteArrayOutputStream())
           .build();
   }
 
