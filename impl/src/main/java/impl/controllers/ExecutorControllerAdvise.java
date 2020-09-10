@@ -11,9 +11,8 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
-import rest.api.dto.ErrorResp;
-import rest.api.dto.SyntaxErrorResp;
-import rest.api.dto.TimeoutErrorResp;
+import org.zalando.problem.Problem;
+import org.zalando.problem.Status;
 
 @ControllerAdvice(basePackageClasses = ExecutorController.class)
 @ResponseBody
@@ -23,40 +22,51 @@ public class ExecutorControllerAdvise {
 
   @ExceptionHandler(SyntaxErrorException.class)
   @ResponseStatus(HttpStatus.BAD_REQUEST)
-  public SyntaxErrorResp response(SyntaxErrorException ex) {
-    return new SyntaxErrorResp(
-          ex.getMessage(),
-          ex.getDesc(),
-          ex.getSection()
-    );
+  public Problem response(SyntaxErrorException ex) {
+    return Problem.builder()
+     .withTitle(ex.getMessage())
+     .withStatus(Status.BAD_REQUEST)
+     .withDetail(ex.getDesc())
+     .with("section", ex.getSection())
+     .build();
   }
 
   @ExceptionHandler(ExecTimeOutException.class)
   @ResponseStatus(HttpStatus.BAD_REQUEST)
-  public TimeoutErrorResp response(ExecTimeOutException ex) {
-    return new TimeoutErrorResp(
-          ex.getMessage(),
-          ex.getOutput()
-    );
+  public Problem response(ExecTimeOutException ex) {
+    return Problem.builder()
+     .withTitle("Waiting time is out")
+     .withStatus(Status.BAD_REQUEST)
+     .withDetail(ex.getMessage())
+     .with("output", ex.getOutput())
+     .build();
   }
 
   @ExceptionHandler(UnknownIdException.class)
   @ResponseStatus(HttpStatus.NOT_FOUND)
-  public ErrorResp response(UnknownIdException ex) {
-    return new ErrorResp(ex.getMessage());
+  public Problem response(UnknownIdException ex) {
+    return Problem.builder()
+     .withTitle("Unknown id")
+     .withStatus(Status.NOT_FOUND)
+     .withDetail(ex.getMessage())
+     .build();
   }
 
   @ExceptionHandler(DeletionException.class)
   @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
-  public ErrorResp response(DeletionException ex) {
-    return new ErrorResp(ex.getMessage());
+  public Problem response(DeletionException ex) {
+    return Problem.builder()
+     .withTitle("Attempt to delete running script")
+     .withStatus(Status.METHOD_NOT_ALLOWED)
+     .withDetail(ex.getMessage())
+     .build();
   }
 
   @ExceptionHandler(Exception.class)
   @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-  public ErrorResp response(Exception ex) {
+  public Problem response(Exception ex) {
     log.error("ERROR: class: {}, message: {}, stack trace: {}",
           ex.getClass().getCanonicalName(), ex.getMessage(), ex.getStackTrace());
-    return new ErrorResp("Internal server error");
+    return Problem.valueOf(Status.INTERNAL_SERVER_ERROR);
   }
 }
