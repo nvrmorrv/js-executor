@@ -1,0 +1,9 @@
+
+POST http://localhost:8080/executor/js/script?blocking=true
+Content-Type: application/json
+
+{
+  "script" : "var c = 0; while(c < 1000000) {c++;}"
+}
+
+###

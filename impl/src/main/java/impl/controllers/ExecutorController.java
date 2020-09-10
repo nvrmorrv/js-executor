@@ -1,7 +1,11 @@
 package impl.controllers;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
 import impl.service.ScriptExecService;
 import impl.service.dto.ExecInfo;
+import impl.service.exceptions.ExceptResException;
+import impl.service.exceptions.SyntaxErrorException;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -19,13 +23,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import rest.api.ExecutorRestApi;
-import rest.api.dto.ExceptionResp;
-import rest.api.dto.ExecReq;
-import rest.api.dto.ExecResp;
-import rest.api.dto.ExecStatusResp;
-import rest.api.dto.ScriptId;
-import rest.api.dto.ScriptListResp;
+import rest.api.doc.annotations.ExecuteScriptApiEndpoint;
+import rest.api.dto.*;
 
 
 @RestController
@@ -35,7 +36,7 @@ import rest.api.dto.ScriptListResp;
 )
 @ResponseBody
 @Tag(name = "JS executor")
-public class ExecutorController implements ExecutorRestApi {
+public class ExecutorController {
   private final ScriptExecService service;
   private final long execTimeout;
 
@@ -51,19 +52,33 @@ public class ExecutorController implements ExecutorRestApi {
         consumes = MediaType.APPLICATION_JSON_VALUE
   )
   @ResponseStatus(HttpStatus.CREATED)
+  @ExecuteScriptApiEndpoint
   public ScriptId executeScriptAsync(@RequestBody ExecReq body) {
     return new ScriptId(service.executeScriptAsync(body.getScript()));
   }
 
   @PostMapping(
-        path = "/script",
-        params = "blocking=true",
-        consumes = MediaType.APPLICATION_JSON_VALUE
+          path = "/script",
+          params = "blocking=true",
+          consumes = MediaType.APPLICATION_JSON_VALUE,
+          produces = MediaType.APPLICATION_STREAM_JSON_VALUE
   )
   @ResponseStatus(HttpStatus.OK)
-  public ExecResp executeScriptWithBlocking(@RequestBody ExecReq body) {
-    ExecInfo res = service.executeScript(body.getScript(), execTimeout, TimeUnit.MINUTES);
-    return getExecResp(res);
+  public StreamingResponseBody executeScriptWithBlocking(@RequestBody ExecReq body) {
+    service.checkScript(body.getScript());
+    return outputStream -> {
+      JsonGenerator generator = new JsonFactory().createGenerator(outputStream);
+      generator.writeStartObject();
+      generator.writeFieldName("output");
+      try {
+        service.executeScript(body.getScript(), outputStream);
+        generator.writeEndObject();
+      } catch (ExceptResException ex) {
+        generator.writeEndObject();
+        generator.flush();
+        generator.writeObject(new StreamingExceptResp(ex.getExceptionMessage()));
+      }
+    };
   }
 
   @GetMapping("/script/{id}")

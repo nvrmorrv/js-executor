@@ -1,5 +1,6 @@
 package impl.configs;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.mvc.WebContentInterceptor;
@@ -27,10 +29,5 @@ public class AppConfig {
         registry.addInterceptor(interceptor);
       }
     };
-  }
-
-  @Bean(name = "AsyncExecutor")
-  public ExecutorService service(@Value("${executor.thread-count}") int threadCount) {
-    return Executors.newFixedThreadPool(threadCount);
   }
 }

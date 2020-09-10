@@ -7,6 +7,7 @@ import impl.service.exceptions.DeletionException;
 import impl.service.exceptions.ExceptResException;
 import impl.service.exceptions.UnknownIdException;
 import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -20,7 +21,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @AllArgsConstructor
-public class ScriptExecServiceImpl implements ScriptExecService {
+public class ScriptExecServiceImpl implements ScriptExecService{
   private final ExecRepository repo;
   private final ScriptExecutor executor;
 
@@ -29,15 +30,13 @@ public class ScriptExecServiceImpl implements ScriptExecService {
     return repo.addExecution(exec);
   }
 
-  @SneakyThrows
-  public ExecInfo executeScript(String script, long execTimeout, TimeUnit unit) {
-    try {
-      String output = executor.execute(script, execTimeout, unit);
-      return new ExecInfo(ExecStatus.DONE.name(), output, Optional.empty());
-    } catch (ExceptResException ex) {
-      return new ExecInfo(ExecStatus.DONE_WITH_EXCEPTION.name(), ex.getOutput(),
-            Optional.of(ex.getExceptionMessage()));
-    }
+  public void executeScript(String script, OutputStream stream) {
+      executor.execute(script, stream);
+  }
+
+  @Override
+  public void checkScript(String script) {
+    executor.checkScript(script);
   }
 
   @SneakyThrows

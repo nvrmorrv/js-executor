@@ -26,50 +26,28 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ScriptExecutor {
-  private final List<BlockingExec> blockingExecs = new CopyOnWriteArrayList<>();
   private final String lang;
 
   public ScriptExecutor(@Value("${executor.lang}") String lang) {
     this.lang = lang;
   }
 
-  public static String getOutput(ByteArrayOutputStream stream) {
-    return new String(stream.toByteArray());
+  public static String getOutput(OutputStream stream) {
+    return stream.toString();
   }
 
-  public String execute(String script, long timeout, TimeUnit timeUnit) {
-    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+  public void execute(String script, OutputStream outputStream) {
     try (Context context = createContext(outputStream)) {
-      addNewBlockingExec(context, timeout, timeUnit);
       context.eval(lang, script);
-      return getOutput(outputStream);
     } catch (PolyglotException e) {
       if (e.isSyntaxError()) {
-        throw new SyntaxErrorException(
-              e.getMessage(), e.getSourceLocation().getCharacters().toString());
-      } else if (e.isCancelled()) {
-        throw new ExecTimeOutException(
-              timeout, timeUnit, getOutput(outputStream));
+        throw new SyntaxErrorException(e.getMessage(),
+                e.getSourceLocation().getCharacters().toString());
       } else {
         throw new ExceptResException(
-              e.getMessage(), getOutput(outputStream));
+                e.getMessage(), getOutput(outputStream));
       }
-    } catch (IllegalStateException e) {
-      throw new ExecTimeOutException(
-            timeout, timeUnit, getOutput(outputStream));
     }
-  }
-
-  @Scheduled(fixedRate = 100)
-  public void checkTimeoutAndInterrupt() {
-    blockingExecs.stream()
-          .filter(exec -> exec.getExecDuration()
-                .minus(Duration.between(exec.startTime, Instant.now()))
-                .isNegative())
-          .forEach(exec ->  {
-            exec.getCancellation().run();
-            blockingExecs.remove(exec);
-          });
   }
 
   public void awaitTermination(Execution exec, long execTimeout, TimeUnit unit)
@@ -138,14 +116,6 @@ public class ScriptExecutor {
     }
   }
 
-  private void addNewBlockingExec(Context context, long timeout, TimeUnit timeUnit) {
-    blockingExecs.add(new BlockingExec(
-          Instant.now(),
-          Duration.of(timeout, timeUnit.toChronoUnit()),
-          () -> context.close(true)
-    ));
-  }
-
   private Context createContext(OutputStream outputStream) {
     return Context.newBuilder(lang)
           .out(outputStream)
@@ -154,13 +124,5 @@ public class ScriptExecutor {
 
   private Context createContext() {
     return Context.newBuilder(lang).build();
-  }
-
-  @AllArgsConstructor
-  @Getter
-  public static class BlockingExec {
-    private final Instant startTime;
-    private final Duration execDuration;
-    private final Runnable cancellation;
   }
 }
