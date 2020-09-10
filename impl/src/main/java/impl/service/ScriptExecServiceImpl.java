@@ -31,6 +31,7 @@ public class ScriptExecServiceImpl implements ScriptExecService{
   }
 
   public void executeScript(String script, OutputStream stream) {
+    Execution executiond 
       executor.execute(script, stream);
   }
 
@@ -81,7 +82,16 @@ public class ScriptExecServiceImpl implements ScriptExecService{
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     CompletableFuture<Runnable> ctCreation = new CompletableFuture<>();
     CompletableFuture<Void> comp = executor.executeAsync(script, status, ctCreation, outputStream);
-    return new Execution(status, outputStream, comp, ctCreation);
+    return new Execution(script, status, outputStream, comp, ctCreation);
+  }
+
+  private Execution getExec(String script, OutputStream stream) {
+    executor.checkScript(script);
+    AtomicReference<impl.service.ExecStatus> status = new AtomicReference<>(impl.service.ExecStatus.QUEUE);
+    OutputStreamWrapper out = new OutputStreamWrapper(stream);
+    CompletableFuture<Runnable> ctCreation = new CompletableFuture<>();
+    CompletableFuture<Void> comp = new CompletableFuture<>();
+    return new Execution(script, status, out, comp, ctCreation);
   }
 
   private Execution getExecOrThrow(String execId) {

@@ -36,19 +36,23 @@ public class ScriptExecutor {
     return stream.toString();
   }
 
-  public void execute(String script, OutputStream outputStream) {
-    try (Context context = createContext(outputStream)) {
-      context.eval(lang, script);
-    } catch (PolyglotException e) {
-      e.printStackTrace();
-      if (e.isSyntaxError()) {
-        throw new SyntaxErrorException(e.getMessage(),
-                e.getSourceLocation().getCharacters().toString());
-      } else {
-        throw new ExceptResException(
-                e.getMessage(), getOutput(outputStream));
-      }
-    }
+
+  public void execute(String script,
+                      AtomicReference<ExecStatus> status,
+                      CompletableFuture<Runnable> ctCreation,
+                      CompletableFuture<Void> computation,
+                      ByteArrayOutputStream outputStream) {
+    executeScript(script, status, ctCreation, outputStream);
+    computation.complete(null);
+  }
+
+  @Async
+  public CompletableFuture<Void> executeAsync(String script,
+               AtomicReference<ExecStatus> status,
+               CompletableFuture<Runnable> ctCreation,
+               ByteArrayOutputStream outputStream) {
+    executeScript(script, status, ctCreation, outputStream);
+    return CompletableFuture.completedFuture(null);
   }
 
   public void awaitTermination(Execution exec, long execTimeout, TimeUnit unit)
@@ -71,11 +75,10 @@ public class ScriptExecutor {
   }
 
 
-  @Async("AsyncExecutor")
-  public CompletableFuture<Void> executeAsync(String script,
-                                              AtomicReference<ExecStatus> status,
-                                              CompletableFuture<Runnable> ctCreation,
-                                              ByteArrayOutputStream outputStream) {
+  private void  executeScript(String script,
+                        AtomicReference<ExecStatus> status,
+                        CompletableFuture<Runnable> ctCreation,
+                        ByteArrayOutputStream outputStream) {
     status.set(ExecStatus.RUNNING);
     try (Context context = createContext(outputStream)) {
       checkCancelAndComplete(ctCreation, context);
@@ -86,12 +89,11 @@ public class ScriptExecutor {
         status.set(ExecStatus.CANCELLED);
       } else {
         throw new ExceptResException(
-              ex.getMessage(), getOutput(outputStream));
+         ex.getMessage(), getOutput(outputStream));
       }
     } catch (IllegalStateException ex) {
       status.set(ExecStatus.CANCELLED);
     }
-    return CompletableFuture.completedFuture(null);
   }
 
   private void checkCancelAndComplete(CompletableFuture<Runnable> ctCreation,

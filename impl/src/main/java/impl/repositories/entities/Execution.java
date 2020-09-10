@@ -1,7 +1,7 @@
 package impl.repositories.entities;
 
 import impl.service.ExecStatus;
-import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.AllArgsConstructor;
@@ -12,8 +12,9 @@ import lombok.Getter;
 @Getter
 @EqualsAndHashCode
 public class Execution {
+  private final String script;
   private final AtomicReference<ExecStatus> status;
-  private final ByteArrayOutputStream outputStream;
+  private final OutputStream outputStream;
   private final CompletableFuture<Void> computation;
   private final CompletableFuture<Runnable> ctCreation;
 }
