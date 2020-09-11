@@ -2,26 +2,19 @@ package impl.service;
 
 import impl.repositories.entities.Execution;
 import impl.service.exceptions.ExceptResException;
-import impl.service.exceptions.ExecTimeOutException;
 import impl.service.exceptions.SyntaxErrorException;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import org.apache.catalina.connector.ClientAbortException;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -36,14 +29,17 @@ public class ScriptExecutor {
     return stream.toString();
   }
 
-
   public void execute(String script,
                       AtomicReference<ExecStatus> status,
                       CompletableFuture<Runnable> ctCreation,
                       CompletableFuture<Void> computation,
-                      ByteArrayOutputStream outputStream) {
-    executeScript(script, status, ctCreation, outputStream);
-    computation.complete(null);
+                      OutputStream outputStream) {
+    try {
+      executeScript(script, status, ctCreation, outputStream);
+      computation.complete(null);
+    } catch (ExceptResException ex) {
+      computation.completeExceptionally(ex);
+    }
   }
 
   @Async
@@ -75,10 +71,10 @@ public class ScriptExecutor {
   }
 
 
-  private void  executeScript(String script,
+  private void executeScript(String script,
                         AtomicReference<ExecStatus> status,
                         CompletableFuture<Runnable> ctCreation,
-                        ByteArrayOutputStream outputStream) {
+                        OutputStream outputStream) {
     status.set(ExecStatus.RUNNING);
     try (Context context = createContext(outputStream)) {
       checkCancelAndComplete(ctCreation, context);
@@ -122,7 +118,6 @@ public class ScriptExecutor {
   private Context createContext(OutputStream outputStream) {
     return Context.newBuilder(lang)
           .out(outputStream)
-            .out(new ByteArrayOutputStream())
           .build();
   }
 

@@ -3,6 +3,8 @@
  */
 package impl;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
@@ -10,6 +12,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import lombok.SneakyThrows;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
@@ -19,11 +22,52 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.mvc.WebContentInterceptor;
+import rest.api.dto.StreamingExceptResp;
 
 @SpringBootApplication
 public class App {
   public static void main(String[] args) throws InterruptedException, ExecutionException, IOException {
-    SpringApplication.run(App.class, args);
+   SpringApplication.run(App.class, args);
+    //test6();
+  }
+  public static void test11() throws IOException {
+    ByteArrayOutputStream arr = new ByteArrayOutputStream() {
+      @SneakyThrows
+      @Override
+      public synchronized void write(int b) {
+        super.write(b);
+        System.out.println("int b");
+      }
+
+      @SneakyThrows
+      @Override
+      public synchronized void write(byte[] bytes) {
+        super.write(bytes);
+        System.out.println("write(byte[] bytes)");
+      }
+
+      @SneakyThrows
+      @Override
+      public synchronized void write(byte[] bytes, int off, int ln) {
+        super.write(bytes, off, ln);
+        System.out.println("write(byte[] bytes, int off, int ln)");
+      }
+    };
+    try (Context ct = Context.newBuilder("js")
+          .out(arr)
+          .build()) {
+      String prog = "var c = 0; while(c < 1000000) {console.log(c++);}";
+      ct.eval(Source.newBuilder("js", prog, "blah").build());
+    }
+    System.out.println(arr.toString());
+  }
+
+  public static void test10() throws IOException {
+    JsonGenerator generator = new JsonFactory().createGenerator(System.out);
+    generator.writeStartObject();
+    generator.writeStringField("output", "hello");
+    generator.writeEndObject();
+    generator.flush();
   }
 
   public static void test4() {
@@ -52,26 +96,21 @@ public class App {
     String prog = "sdf.(234324)";
     ct.eval(Source.newBuilder("js", prog, "blah").build());
   }
-  public static void test6() throws InterruptedException {
-    ByteArrayOutputStream arr = new ByteArrayOutputStream(); // synchronize on this
-    ByteArrayOutputStream err = new ByteArrayOutputStream(); // synchronize on this
+  public static void test6() throws InterruptedException {// synchronize on this
     Context ct = Context.newBuilder("js")
-          .out(arr)
-          .err(err)
           .build();
     Runnable runnable = () -> {
       try (ct) {
-        String prog = "sdf.(234324)";
+        String prog = "while(true){}";
         ct.eval(Source.newBuilder("js", prog, "blah").build());
       } catch (Exception e) {
         e.printStackTrace();
       }
     };
-    ExecutorService pool = Executors.newFixedThreadPool(1);
-    pool.execute(runnable);
+    Thread thread = new Thread(runnable);
+    thread.start();
     Thread.sleep(3000);
-    //ct.close(true);
-    pool.shutdown();
+    thread.interrupt();
   }
 
 

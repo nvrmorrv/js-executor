@@ -1,36 +1,36 @@
 package impl.service;
 
-import lombok.AllArgsConstructor;
-
-import java.io.IOException;
+import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
-import java.util.concurrent.atomic.AtomicReference;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 
-@AllArgsConstructor
-public class OutputStreamWrapper extends OutputStream {
-  private final OutputStream stream;
-  private final AtomicReference<String> output = new AtomicReference<>("");
+@RequiredArgsConstructor
+public class OutputStreamWrapper extends ByteArrayOutputStream {
+  private final OutputStream respOutStream;
 
   @Override
-  public synchronized void write(int b) throws IOException {
-    output.updateAndGet(s -> s + b);
-    stream.write(b);
+  public void write(int b) {
+    super.write(b);
+    writeToRespStream(new byte[]{(byte)b}, 0, 1);
+  }
+
+  @SneakyThrows
+  @Override
+  public void write(byte[] bytes) {
+    super.write(bytes);
+    writeToRespStream(bytes, 0, bytes.length);
   }
 
   @Override
-  public synchronized void write(byte[] bytes) throws IOException {
-    output.updateAndGet(s -> s + bytes);
-    stream.write(bytes);
+  public void write(byte[] bytes, int off, int ln) {
+    super.write(bytes, off, ln);
+    writeToRespStream(bytes, off, ln);
   }
 
-  @Override
-  public synchronized void write(byte[] bytes, int off, int ln) throws IOException {
-    write(bytes);
+  @SneakyThrows
+  private void writeToRespStream(byte[] bytes, int off, int ln) {
+    respOutStream.write(bytes, off, ln);
+    respOutStream.flush();
   }
-
-  @Override
-  public synchronized String toString() {
-    return output.toString();
-  }
-
 }

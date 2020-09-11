@@ -1,9 +1,27 @@
 
-POST http://localhost:8080/executor/js/script?blocking=false
+POST http://localhost:8080/executor/js/script?blocking=true
 Content-Type: application/json
 
 {
-  "script" : "var c = 0; while(true) {console.log(c++);}"
+  "script" : "var c = 0; while(c < 1000){console.log(c++);}"
+}
+
+###
+
+POST http://localhost:8080/executor/js/script?blocking=true
+Content-Type: application/json
+
+{
+  "script" : "var i = 0; while(i < 10) {console.log('hello ' + i++);}"
+}
+
+###
+
+POST http://localhost:8080/executor/js/script?blocking=true
+Content-Type: application/json
+
+{
+  "script" : "console.log('kjcssbajkcbjhsabvddddddddehfhwvhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhansdbcdbmsdbnd');console.log('kjcssbajkcbjhsabvddddddddehfhwvhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhansdbcdbmsdbnd');"
 }
 
 ###

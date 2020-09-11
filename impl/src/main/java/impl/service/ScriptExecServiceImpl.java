@@ -1,5 +1,7 @@
 package impl.service;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
 import impl.repositories.ExecRepository;
 import impl.repositories.entities.Execution;
 import impl.service.dto.ExecInfo;
@@ -7,21 +9,23 @@ import impl.service.exceptions.DeletionException;
 import impl.service.exceptions.ExceptResException;
 import impl.service.exceptions.UnknownIdException;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @AllArgsConstructor
-public class ScriptExecServiceImpl implements ScriptExecService{
+public class ScriptExecServiceImpl implements ScriptExecService {
   private final ExecRepository repo;
   private final ScriptExecutor executor;
 
@@ -30,9 +34,17 @@ public class ScriptExecServiceImpl implements ScriptExecService{
     return repo.addExecution(exec);
   }
 
+  @SneakyThrows
   public void executeScript(String script, OutputStream stream) {
-    Execution executiond 
-      executor.execute(script, stream);
+    Execution exec = getExec(script, stream);
+    String id = repo.addExecution(exec);
+    writeId(id, stream);
+    executor.execute(
+          exec.getScript(),
+          exec.getStatus(),
+          exec.getCtCreation(),
+          exec.getComputation(),
+          exec.getOutputStream());
   }
 
   @Override
@@ -85,17 +97,27 @@ public class ScriptExecServiceImpl implements ScriptExecService{
     return new Execution(script, status, outputStream, comp, ctCreation);
   }
 
-  private Execution getExec(String script, OutputStream stream) {
+  private Execution getExec(String script, OutputStream outputStream) {
     executor.checkScript(script);
     AtomicReference<impl.service.ExecStatus> status = new AtomicReference<>(impl.service.ExecStatus.QUEUE);
-    OutputStreamWrapper out = new OutputStreamWrapper(stream);
+    OutputStreamWrapper streamWrapper = new OutputStreamWrapper(outputStream);
     CompletableFuture<Runnable> ctCreation = new CompletableFuture<>();
     CompletableFuture<Void> comp = new CompletableFuture<>();
-    return new Execution(script, status, out, comp, ctCreation);
+    return new Execution(script, status, streamWrapper, comp, ctCreation);
   }
 
   private Execution getExecOrThrow(String execId) {
     return repo.getExecution(execId).orElseThrow(() -> new UnknownIdException(execId));
+  }
+
+  private void writeId(String id, OutputStream outputStream) throws IOException {
+    JsonGenerator generator = new JsonFactory().createGenerator(outputStream);
+    generator.writeStartObject();
+    generator.writeStringField("id", id);
+    generator.writeEndObject();
+    generator.flush();
+    outputStream.write('\n');
+    outputStream.flush();
   }
 
 }
