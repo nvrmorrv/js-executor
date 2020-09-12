@@ -14,8 +14,8 @@ import java.lang.annotation.Target;
 
 import impl.controllers.doc.resp.InternalSerErrResp;
 import impl.controllers.doc.resp.NotFoundResp;
-import impl.controllers.dto.ExceptionResp;
-import impl.controllers.dto.ExecStatusResp;
+import impl.controllers.dto.ExceptionStatusResp;
+import impl.controllers.dto.CommonStatusResp;
 import org.springframework.http.MediaType;
 
 @Operation(
@@ -32,7 +32,7 @@ import org.springframework.http.MediaType;
         content = {
                 @Content(
                         mediaType = MediaType.APPLICATION_JSON_VALUE,
-                        schema = @Schema(anyOf = {ExceptionResp.class, ExecStatusResp.class}))
+                        schema = @Schema(anyOf = {ExceptionStatusResp.class, CommonStatusResp.class}))
         })
 @NotFoundResp
 @InternalSerErrResp

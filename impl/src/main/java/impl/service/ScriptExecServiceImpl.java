@@ -2,6 +2,7 @@ package impl.service;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import impl.repositories.ExecRepository;
 import impl.repositories.entities.Execution;
 import impl.service.dto.ExecInfo;
@@ -16,6 +17,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +29,7 @@ import org.springframework.stereotype.Service;
 public class ScriptExecServiceImpl implements ScriptExecService {
   private final ExecRepository repo;
   private final ScriptExecutor executor;
+  private final ObjectMapper jsonMapper;
 
   public String executeScriptAsync(String script) {
     Execution exec = getExec(script);
@@ -34,10 +37,13 @@ public class ScriptExecServiceImpl implements ScriptExecService {
   }
 
   @SneakyThrows
-  public void executeScript(String script, OutputStream stream) {
+  public void executeScript(String script,
+                            OutputStream stream,
+                            Function<String, Object> idDtoProvider) {
     Execution exec = getExec(script, stream);
     String id = repo.addExecution(exec);
-    writeId(id, stream);
+    Object idDto = idDtoProvider.apply(id);
+    writeId(idDto, stream);
     executor.execute(
           exec.getScript(),
           exec.getStatus(),
@@ -108,11 +114,9 @@ public class ScriptExecServiceImpl implements ScriptExecService {
     return repo.getExecution(execId).orElseThrow(() -> new UnknownIdException(execId));
   }
 
-  private void writeId(String id, OutputStream outputStream) throws IOException {
+  private void writeId(Object idDto, OutputStream outputStream) throws IOException {
     JsonGenerator generator = new JsonFactory().createGenerator(outputStream);
-    generator.writeStartObject();
-    generator.writeStringField("id", id);
-    generator.writeEndObject();
+    jsonMapper.writeValue(generator, idDto);
     generator.flush();
     outputStream.write('\n');
     outputStream.flush();

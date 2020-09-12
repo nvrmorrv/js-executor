@@ -5,6 +5,7 @@ import lombok.Getter;
 
 @AllArgsConstructor
 @Getter
-public class ExecStatusResp implements ExecResp {
+public class ExceptionStatusResp extends StatusResp {
   private final String status;
+  private final String message;
 }
