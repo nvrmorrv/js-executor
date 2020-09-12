@@ -6,7 +6,6 @@ import impl.repositories.ExecRepository;
 import impl.repositories.entities.Execution;
 import impl.service.dto.ExecInfo;
 import impl.service.exceptions.DeletionException;
-import impl.service.exceptions.ExceptResException;
 import impl.service.exceptions.UnknownIdException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -47,11 +46,6 @@ public class ScriptExecServiceImpl implements ScriptExecService {
           exec.getOutputStream());
   }
 
-  @Override
-  public void checkScript(String script) {
-    executor.checkScript(script);
-  }
-
   @SneakyThrows
   public ExecInfo getExecutionStatus(String execId) {
     Execution exec = getExecOrThrow(execId);
@@ -59,15 +53,19 @@ public class ScriptExecServiceImpl implements ScriptExecService {
       try {
         exec.getComputation().get();
       } catch (ExecutionException ex) {
-        ExceptResException e = (ExceptResException) ex.getCause();
-        return new ExecInfo(ExecStatus.DONE_WITH_EXCEPTION.name(), e.getOutput(),
-              Optional.of(e.getExceptionMessage()));
+        return new ExecInfo(ExecStatus.DONE_WITH_EXCEPTION.name(),
+              Optional.of(ex.getCause().getMessage()));
       }
     }
-    return new ExecInfo(
-          exec.getStatus().get().name(),
-          ScriptExecutor.getOutput(exec.getOutputStream()),
-          Optional.empty());
+    return new ExecInfo(exec.getStatus().get().name(), Optional.empty());
+  }
+
+  public String getExecutionScript(String id) {
+    return getExecOrThrow(id).getScript();
+  }
+
+  public String getExecutionOutput(String id) {
+    return ScriptExecutor.getOutput(getExecOrThrow(id).getOutputStream());
   }
 
   @SneakyThrows

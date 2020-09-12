@@ -1,6 +1,5 @@
-package rest.api.dto;
+package impl.controllers.dto;
 
-import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -9,5 +8,4 @@ import lombok.Getter;
 public class ExceptionResp implements ExecResp {
   private final String status;
   private final String message;
-  private final String output;
 }

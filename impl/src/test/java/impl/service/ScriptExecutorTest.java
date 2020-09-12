@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import impl.repositories.entities.Execution;
 import impl.service.exceptions.ExceptResException;
-import impl.service.exceptions.ExecTimeOutException;
 import impl.service.exceptions.SyntaxErrorException;
 import java.io.ByteArrayOutputStream;
 import java.util.concurrent.CompletableFuture;

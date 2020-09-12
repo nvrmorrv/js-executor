@@ -13,7 +13,6 @@ import impl.service.ExecStatus;
 import impl.service.ScriptExecService;
 import impl.service.dto.ExecInfo;
 import impl.service.exceptions.DeletionException;
-import impl.service.exceptions.ExecTimeOutException;
 import impl.service.exceptions.SyntaxErrorException;
 import impl.service.exceptions.UnknownIdException;
 import java.util.Collections;
@@ -30,7 +29,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
-import rest.api.dto.ExecReq;
+import impl.controllers.dto.ExecReq;
 
 @ExtendWith(SpringExtension.class)
 @WebMvcTest(controllers = ExecutorController.class)

@@ -1,4 +1,4 @@
-package rest.api.doc.annotations;
+package impl.controllers.doc;
 
 import static java.lang.annotation.ElementType.METHOD;
 
@@ -12,10 +12,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import rest.api.doc.annotations.resp.InternalSerErrResp;
-import rest.api.doc.annotations.resp.NotFoundResp;
-import rest.api.doc.annotations.resp.OkEmptyResp;
-import rest.api.dto.ErrorResp;
+import impl.controllers.doc.resp.InternalSerErrResp;
+import impl.controllers.doc.resp.NotFoundResp;
+import impl.controllers.doc.resp.OkEmptyResp;
+import org.springframework.http.MediaType;
+import org.zalando.problem.Problem;
 
 @Operation(
       summary = "Delete execution",
@@ -30,8 +31,8 @@ import rest.api.dto.ErrorResp;
         description = "Error: attempt to delete running execution",
         content = {
                 @Content(
-                        mediaType = "application/json",
-                        schema = @Schema(implementation = ErrorResp.class)) })
+                        mediaType = MediaType.APPLICATION_JSON_VALUE,
+                        schema = @Schema(implementation = Problem.class)) })
 @OkEmptyResp
 @NotFoundResp
 @InternalSerErrResp

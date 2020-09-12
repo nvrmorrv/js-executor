@@ -1,4 +1,4 @@
-package rest.api.doc.annotations;
+package impl.controllers.doc;
 
 import static java.lang.annotation.ElementType.METHOD;
 
@@ -9,9 +9,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import rest.api.doc.annotations.resp.InternalSerErrResp;
-import rest.api.doc.annotations.resp.NotFoundResp;
-import rest.api.doc.annotations.resp.OkEmptyResp;
+import impl.controllers.doc.resp.InternalSerErrResp;
+import impl.controllers.doc.resp.NotFoundResp;
+import impl.controllers.doc.resp.OkEmptyResp;
 
 @Operation(
       summary = "Cancel execution",

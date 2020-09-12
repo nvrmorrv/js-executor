@@ -1,4 +1,4 @@
-package rest.api.doc.annotations.resp;
+package impl.controllers.doc.resp;
 
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 

@@ -1,5 +1,18 @@
 package impl.controllers;
 
+import impl.controllers.doc.CancelExecApiEndPoint;
+import impl.controllers.doc.DeleteExecApiEndpoint;
+import impl.controllers.doc.ExecuteScriptApiEndpoint;
+import impl.controllers.doc.GetExecIdsApiEndpoint;
+import impl.controllers.doc.GetExecOutputApiEndpoint;
+import impl.controllers.doc.GetExecScriptApiEndpoint;
+import impl.controllers.doc.GetExecStatusApiEndpoint;
+import impl.controllers.dto.ExceptionResp;
+import impl.controllers.dto.ExecReq;
+import impl.controllers.dto.ExecResp;
+import impl.controllers.dto.ExecStatusResp;
+import impl.controllers.dto.ScriptId;
+import impl.controllers.dto.ScriptListResp;
 import impl.service.ScriptExecService;
 import impl.service.dto.ExecInfo;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,9 +31,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
-import rest.api.doc.annotations.CancelExecApiEndPoint;
-import rest.api.doc.annotations.ExecuteScriptApiEndpoint;
-import rest.api.dto.*;
+
 
 
 @RestController
@@ -60,26 +71,43 @@ public class ExecutorController {
 
   @GetMapping("/script/{id}")
   @ResponseStatus(HttpStatus.OK)
+  @GetExecStatusApiEndpoint
   public ExecResp getExecutionStatus(@PathVariable(name = "id") String scriptId) {
     ExecInfo info = service.getExecutionStatus(scriptId);
     return getExecResp(info);
   }
 
-  @CancelExecApiEndPoint
+  @GetMapping("/script/{id}/script")
+  @ResponseStatus(HttpStatus.OK)
+  @GetExecScriptApiEndpoint
+  public String getExecutionScript(@PathVariable(name = "id") String scriptId) {
+    return service.getExecutionScript(scriptId);
+  }
+
+  @GetMapping("/script/{id}/output")
+  @ResponseStatus(HttpStatus.OK)
+  @GetExecOutputApiEndpoint
+  public String getExecutionOutput(@PathVariable(name = "id") String scriptId) {
+    return service.getExecutionOutput(scriptId);
+  }
+
   @PutMapping("/script/{id}")
   @ResponseStatus(HttpStatus.OK)
+  @CancelExecApiEndPoint
   public void cancelExecution(@PathVariable(name = "id") String scriptId) {
     service.cancelExecution(scriptId);
   }
 
   @DeleteMapping("/script/{id}")
   @ResponseStatus(HttpStatus.OK)
+  @DeleteExecApiEndpoint
   public void deleteExecution(@PathVariable(name = "id") String scriptId) {
     service.deleteExecution(scriptId);
   }
 
   @GetMapping("/script-list")
   @ResponseStatus(HttpStatus.OK)
+  @GetExecIdsApiEndpoint
   public ScriptListResp getAllExecutions() {
     return getScriptListResp(service.getExecutionIds());
   }
@@ -92,9 +120,9 @@ public class ExecutorController {
 
   private ExecResp getExecResp(ExecInfo res) {
     if(res.getMessage().isPresent()) {
-      return new ExceptionResp(res.getStatus(), res.getMessage().get(), res.getOutput());
+      return new ExceptionResp(res.getStatus(), res.getMessage().get());
     } else {
-      return new ExecStatusResp(res.getStatus(), res.getOutput());
+      return new ExecStatusResp(res.getStatus());
     }
   }
 }

@@ -1,7 +1,6 @@
 package impl.controllers;
 
 import impl.service.exceptions.DeletionException;
-import impl.service.exceptions.ExecTimeOutException;
 import impl.service.exceptions.SyntaxErrorException;
 import impl.service.exceptions.UnknownIdException;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -31,16 +30,6 @@ public class ExecutorControllerAdvise {
      .build();
   }
 
-  @ExceptionHandler(ExecTimeOutException.class)
-  @ResponseStatus(HttpStatus.BAD_REQUEST)
-  public Problem response(ExecTimeOutException ex) {
-    return Problem.builder()
-     .withTitle("Waiting time is out")
-     .withStatus(Status.BAD_REQUEST)
-     .withDetail(ex.getMessage())
-     .with("output", ex.getOutput())
-     .build();
-  }
 
   @ExceptionHandler(UnknownIdException.class)
   @ResponseStatus(HttpStatus.NOT_FOUND)

@@ -1,4 +1,4 @@
-package rest.api.dto;
+package impl.controllers.dto;
 
 import java.util.List;
 import lombok.AllArgsConstructor;

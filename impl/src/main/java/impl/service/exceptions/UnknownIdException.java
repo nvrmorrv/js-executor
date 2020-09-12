@@ -1,6 +1,7 @@
 package impl.service.exceptions;
 
 public class UnknownIdException extends RuntimeException {
+
   public UnknownIdException(String id) {
     super(generateMessage(id));
   }

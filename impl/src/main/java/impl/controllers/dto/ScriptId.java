@@ -1,4 +1,4 @@
-package rest.api.dto;
+package impl.controllers.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

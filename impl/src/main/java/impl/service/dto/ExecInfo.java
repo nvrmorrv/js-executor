@@ -8,6 +8,5 @@ import lombok.Getter;
 @Getter
 public class ExecInfo {
   private final String status;
-  private final String output;
   private final Optional<String> message;
 }

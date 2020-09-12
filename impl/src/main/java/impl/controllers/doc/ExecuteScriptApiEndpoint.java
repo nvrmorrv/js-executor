@@ -1,4 +1,4 @@
-package rest.api.doc.annotations;
+package impl.controllers.doc;
 
 import static java.lang.annotation.ElementType.METHOD;
 
@@ -10,18 +10,15 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import rest.api.doc.annotations.resp.InternalSerErrResp;
-import rest.api.dto.ExceptionResp;
-import rest.api.dto.ExecReq;
-import rest.api.dto.ExecStatusResp;
-import rest.api.dto.ScriptId;
-import rest.api.dto.SyntaxErrorResp;
-import rest.api.dto.TimeoutErrorResp;
+import impl.controllers.doc.resp.InternalSerErrResp;
+import impl.controllers.dto.ExecReq;
+import impl.controllers.dto.ScriptId;
+import org.springframework.beans.factory.parsing.Problem;
+import org.springframework.http.MediaType;
 
 @Operation(
       summary = "Execute script",
@@ -31,7 +28,7 @@ import rest.api.dto.TimeoutErrorResp;
       requestBody = @RequestBody(
             description = "script for executing",
             content = @Content(
-                  mediaType = "application/json",
+                  mediaType = MediaType.APPLICATION_JSON_VALUE,
                   schema = @Schema(implementation = ExecReq.class)
             ),
             required = true
@@ -45,31 +42,30 @@ import rest.api.dto.TimeoutErrorResp;
                   @ExampleObject(name = "blocking request", value = "true")},
             required = true
       )})
-@ApiResponses(value = {
-      @ApiResponse(
-            responseCode = "201",
-            description = "Result of async request",
-            content = {
-                  @Content(
-                        mediaType = "application/json",
-                        schema = @Schema(implementation = ScriptId.class))
-            }),
-      @ApiResponse
-            (responseCode = "200",
+@ApiResponse(
+      responseCode = "201",
+      description = "Result of async request",
+      content = {
+            @Content(
+                  mediaType = MediaType.APPLICATION_JSON_VALUE,
+                  schema = @Schema(implementation = ScriptId.class))
+      })
+@ApiResponse
+      (responseCode = "200",
             description = "Result of blocking request",
             content = {
                   @Content(
-                        mediaType = "application/json",
-                        schema = @Schema(anyOf = {ExceptionResp.class, ExecStatusResp.class}))
-            }),
-      @ApiResponse(responseCode = "400",
-            description = "Error: syntax error in script or time of blocking exec is out",
+                        mediaType = MediaType.TEXT_PLAIN_VALUE,
+                        schema = @Schema(implementation = String.class))
+            })
+@ApiResponse
+      (responseCode = "400",
+            description = "Syntax error",
             content = {
                   @Content(
-                        mediaType = "application/json",
-                        schema = @Schema(anyOf = {SyntaxErrorResp.class, TimeoutErrorResp.class}))
-      })
-})
+                        mediaType = MediaType.APPLICATION_JSON_VALUE,
+                        schema = @Schema(implementation = Problem.class))
+            })
 @InternalSerErrResp
 @Target({METHOD})
 @Retention(RetentionPolicy.RUNTIME)

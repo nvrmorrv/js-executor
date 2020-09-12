@@ -11,7 +11,6 @@ import impl.repositories.entities.Execution;
 import impl.service.dto.ExecInfo;
 import impl.service.exceptions.DeletionException;
 import impl.service.exceptions.ExceptResException;
-import impl.service.exceptions.ExecTimeOutException;
 import impl.service.exceptions.SyntaxErrorException;
 import impl.service.exceptions.UnknownIdException;
 import java.io.ByteArrayOutputStream;

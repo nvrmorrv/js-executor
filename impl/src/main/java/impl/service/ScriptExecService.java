@@ -4,7 +4,6 @@ import impl.service.dto.ExecInfo;
 
 import java.io.OutputStream;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public interface ScriptExecService {
 
@@ -12,9 +11,11 @@ public interface ScriptExecService {
 
   void executeScript(String script, OutputStream stream);
 
-  void checkScript(String script);
-
   ExecInfo getExecutionStatus(String execId);
+
+  String getExecutionScript(String execId);
+
+  String getExecutionOutput(String execId);
 
   void cancelExecution(String execId);
 

@@ -1,4 +1,4 @@
-package rest.api.doc.annotations;
+package impl.controllers.doc;
 
 import static java.lang.annotation.ElementType.METHOD;
 
@@ -8,16 +8,15 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import rest.api.doc.annotations.resp.InternalSerErrResp;
-import rest.api.doc.annotations.resp.NotFoundResp;
-import rest.api.dto.ErrorResp;
-import rest.api.dto.ExceptionResp;
-import rest.api.dto.ExecStatusResp;
+import impl.controllers.doc.resp.InternalSerErrResp;
+import impl.controllers.doc.resp.NotFoundResp;
+import impl.controllers.dto.ExceptionResp;
+import impl.controllers.dto.ExecStatusResp;
+import org.springframework.http.MediaType;
 
 @Operation(
       summary = "Get execution status",
@@ -32,7 +31,7 @@ import rest.api.dto.ExecStatusResp;
         description = "OK",
         content = {
                 @Content(
-                        mediaType = "application/json",
+                        mediaType = MediaType.APPLICATION_JSON_VALUE,
                         schema = @Schema(anyOf = {ExceptionResp.class, ExecStatusResp.class}))
         })
 @NotFoundResp

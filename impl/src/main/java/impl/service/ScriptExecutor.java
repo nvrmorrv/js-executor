@@ -10,7 +10,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.catalina.connector.ClientAbortException;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.springframework.beans.factory.annotation.Value;
@@ -84,8 +83,7 @@ public class ScriptExecutor {
       if (ex.isCancelled()) {
         status.set(ExecStatus.CANCELLED);
       } else {
-        throw new ExceptResException(
-         ex.getMessage(), getOutput(outputStream));
+        throw new ExceptResException(ex.getMessage());
       }
     } catch (IllegalStateException ex) {
       status.set(ExecStatus.CANCELLED);
