@@ -19,11 +19,11 @@ buildscript {
 plugins {
     id 'java'
     id 'application'
+    id "org.sonarqube" version "2.7"
 }
 
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
-//apply plugin: "org.sonarqube"
 
 repositories {
     // Use jcenter for resolving dependencies.

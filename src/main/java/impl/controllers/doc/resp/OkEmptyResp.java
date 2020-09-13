@@ -9,7 +9,6 @@ import java.lang.annotation.Target;
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.METHOD;
 
-
 @ApiResponse(
         responseCode = "200",
         description = "OK"
