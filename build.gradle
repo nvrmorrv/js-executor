@@ -5,31 +5,57 @@
  * For more details take a look at the Java Quickstart chapter in the Gradle
  * User Manual available at https://docs.gradle.org/6.4.1/userguide/tutorial_java_projects.html
  */
-
-subprojects {
-
-    apply plugin: 'java'
-
+buildscript {
     repositories {
-        // Use jcenter for resolving dependencies.
-        // You can declare any Maven/Ivy/file repository here.
-        jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
     }
-
     dependencies {
-        implementation 'com.google.guava:guava:28.2-jre'
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
-        testImplementation 'org.assertj:assertj-core:3.15.0'
-        compileOnly 'org.projectlombok:lombok:1.18.12'
-        annotationProcessor 'org.projectlombok:lombok:1.18.12'
-        testCompileOnly 'org.projectlombok:lombok:1.18.12'
-        testAnnotationProcessor 'org.projectlombok:lombok:1.18.12'
+        classpath "org.springframework.boot:spring-boot-gradle-plugin:2.3.0.RELEASE"
     }
+}
 
-    test {
-        // Use junit platform for unit tests
-        useJUnitPlatform()
-    }
+plugins {
+    id 'java'
+    id 'application'
+}
+
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+//apply plugin: "org.sonarqube"
+
+repositories {
+    // Use jcenter for resolving dependencies.
+    // You can declare any Maven/Ivy/file repository here.
+    jcenter()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-test'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-hateoas'
+    implementation 'org.zalando:problem-spring-web-starter:0.25.2'
+    implementation 'org.graalvm.js:js:20.2.0'
+    implementation group: 'org.springdoc', name: 'springdoc-openapi-ui', version: '1.4.5'
+    implementation 'com.google.guava:guava:28.2-jre'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
+    testImplementation 'org.assertj:assertj-core:3.15.0'
+    compileOnly 'org.projectlombok:lombok:1.18.12'
+    annotationProcessor 'org.projectlombok:lombok:1.18.12'
+    testCompileOnly 'org.projectlombok:lombok:1.18.12'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.12'
+}
+
+application {
+    // Define the main class for the application.
+    mainClassName = 'impl.App'
+}
+
+test {
+    // Use junit platform for unit tests
+    useJUnitPlatform()
 }
 

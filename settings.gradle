@@ -8,5 +8,3 @@
  */
 
 rootProject.name = 'js-executor'
-include(':api')
-include(':impl')
