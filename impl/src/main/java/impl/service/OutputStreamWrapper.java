@@ -2,13 +2,9 @@ package impl.service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
-import java.util.stream.IntStream;
-import java.util.stream.StreamSupport;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.CharSet;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -25,7 +21,6 @@ public class OutputStreamWrapper extends ByteArrayOutputStream {
   @Override
   public void write(byte[] bytes) {
     super.write(bytes);
-    writeToRespStream(bytes, 0, bytes.length);
   }
 
   @Override

@@ -3,6 +3,7 @@ package impl.service;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import impl.repositories.entities.Execution;
 import impl.service.exceptions.ExceptResException;
@@ -71,12 +72,21 @@ public class ScriptExecutorTest {
     return exec.getOutputStream().toString();
   }
 
-  private void executeAsync (String script) {
+  private void executeAsync(String script) {
     AtomicReference<impl.service.ExecStatus> status = new AtomicReference<>(impl.service.ExecStatus.QUEUE);
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     CompletableFuture<Runnable> ctCreation = new CompletableFuture<>();
     CompletableFuture<Void> comp = executor.executeAsync(script, status, ctCreation, outputStream);
-    execution = new  Execution(status, outputStream, comp, ctCreation);
+    execution = new Execution(script, status, outputStream, comp, ctCreation);
+  }
+
+  private void executeBlocking(String script) {
+    AtomicReference<impl.service.ExecStatus> status = new AtomicReference<>(impl.service.ExecStatus.QUEUE);
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    CompletableFuture<Runnable> ctCreation = new CompletableFuture<>();
+    CompletableFuture<Void> comp = new CompletableFuture<>();
+    execution = new Execution(script, status, outputStream, comp, ctCreation);
+    executor.execute(script, status, ctCreation, comp, outputStream);
   }
 
   //      executeScriptAsync
@@ -92,36 +102,24 @@ public class ScriptExecutorTest {
   @Test
   public void shouldPassOnAsyncExecWithException() {
     executeAsync(SCRIPT_WITH_EXCEPTION);
-    assertThatThrownBy(() -> execution.getComputation().get()
-    ).hasCauseExactlyInstanceOf(ExceptResException.class);
+    assertThatThrownBy(() -> execution.getComputation().get())
+          .hasCauseExactlyInstanceOf(ExceptResException.class);
   }
-
 
   //    executeScript
 
   @Test
   public void shouldPassOnBlockingExec() {
-    String output = executor.execute(FINITE_SCRIPT, 30, TimeUnit.SECONDS);
-    assertEquals(FINITE_SCRIPT_RESULT, output);
-  }
-
-  @Test
-  public void shouldPassOnBlockingExecWithSyntaxError() {
-    assertThatThrownBy(() -> executor.execute(SCRIPT_WITH_SYNTAX_ERROR, 30, TimeUnit.SECONDS))
-          .isInstanceOf(SyntaxErrorException.class);
+    executeBlocking(FINITE_SCRIPT);
+    assertTrue(execution.getComputation().isDone() && ! execution.getComputation().isCompletedExceptionally());
+    assertEquals(FINITE_SCRIPT_RESULT, getOutput(execution));
+    assertEquals(ExecStatus.DONE.name(), getStatus(execution));
   }
 
   @Test
   public void shouldPassOnBlockingExecWithException() {
-    assertThatThrownBy(() -> executor.execute(SCRIPT_WITH_EXCEPTION, 30, TimeUnit.SECONDS))
-          .isInstanceOf(ExceptResException.class);
-  }
-
-  @Test
-  public void shouldFailOnBlockingExecWhenTimeout() {
-    assertThatThrownBy(() ->
-          executor.execute(INFINITE_SCRIPT, 1, TimeUnit.SECONDS))
-          .isInstanceOf(ExecTimeOutException.class);
+    executeBlocking(SCRIPT_WITH_EXCEPTION);
+    assertTrue(execution.getComputation().isCompletedExceptionally());
   }
 
   //  cancelExec

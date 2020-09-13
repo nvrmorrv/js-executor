@@ -23,9 +23,9 @@ public class ExecutorControllerAdvise {
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   public Problem response(SyntaxErrorException ex) {
     return Problem.builder()
-     .withTitle(ex.getMessage())
+     .withTitle("Syntax error")
      .withStatus(Status.BAD_REQUEST)
-     .withDetail(ex.getDesc())
+     .withDetail(ex.getMessage())
      .with("section", ex.getSection())
      .build();
   }
@@ -54,8 +54,8 @@ public class ExecutorControllerAdvise {
   @ExceptionHandler(Exception.class)
   @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
   public Problem response(Exception ex) {
-    log.error("ERROR: class: {}, message: {}, stack trace: {}",
-          ex.getClass().getCanonicalName(), ex.getMessage(), ex.getStackTrace());
+    log.error("ERROR: class: {}, message: {}", ex.getClass().getCanonicalName(), ex.getMessage());
+    ex.printStackTrace();
     return Problem.valueOf(Status.INTERNAL_SERVER_ERROR);
   }
 }

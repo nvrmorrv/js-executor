@@ -24,10 +24,6 @@ public class ScriptExecutor {
     this.lang = lang;
   }
 
-  public static String getOutput(OutputStream stream) {
-    return stream.toString();
-  }
-
   public void execute(String script,
                       AtomicReference<ExecStatus> status,
                       CompletableFuture<Runnable> ctCreation,

@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 public class ExecRepositoryImpTest {
   private ExecRepositoryImpl repo;
   private final Execution EXECUTION = new Execution(
+        "script",
         new AtomicReference<>(ExecStatus.QUEUE),
         new ByteArrayOutputStream(),
         new CompletableFuture<>(),

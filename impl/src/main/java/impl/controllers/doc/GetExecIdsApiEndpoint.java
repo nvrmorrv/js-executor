@@ -11,7 +11,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import impl.controllers.doc.resp.InternalSerErrResp;
-import impl.controllers.dto.ScriptListResp;
+import java.util.ArrayList;
 import org.springframework.http.MediaType;
 
 @Operation(
@@ -24,7 +24,7 @@ import org.springframework.http.MediaType;
       content = {
             @Content(
                   mediaType = MediaType.APPLICATION_JSON_VALUE,
-                  schema = @Schema(implementation = ScriptListResp.class))
+                  schema = @Schema(implementation = ArrayList.class))
       }
 )
 @InternalSerErrResp
