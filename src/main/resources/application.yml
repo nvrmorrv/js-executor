@@ -2,12 +2,17 @@ server:
   port: 8080
 
 spring:
+  task:
+    execution:
+      pool:
+        core-size: 8
+        max-size: 8
+        queue-capacity: 200
   mvc:
     async:
       request-timeout: -1
 
 executor:
-  thread-count: 8
   lang: "js"
 
 springdoc:
