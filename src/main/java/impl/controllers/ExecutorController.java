@@ -20,6 +20,7 @@ import impl.controllers.dto.CommonStatusResp;
 import impl.controllers.dto.ScriptId;
 import impl.service.ScriptExecService;
 import impl.service.dto.ExecInfo;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -45,7 +46,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 @RestController
 @RequestMapping (
       path = "/executor/js",
-      produces = MediaType.APPLICATION_JSON_VALUE)
+      produces = {MediaType.APPLICATION_JSON_VALUE})
 @Tag(name = "JS executor")
 @AllArgsConstructor
 public class ExecutorController {
@@ -66,8 +67,10 @@ public class ExecutorController {
   @PostMapping(
         path = "/script",
         params = "blocking=true",
-        consumes = MediaType.APPLICATION_JSON_VALUE
+        consumes = MediaType.APPLICATION_JSON_VALUE,
+        produces = MediaType.TEXT_PLAIN_VALUE
   )
+  @Hidden
   public ResponseEntity<StreamingResponseBody> executeScriptWithBlocking(@RequestBody ExecReq body) {
     return ResponseEntity.ok(
           outputStream -> {

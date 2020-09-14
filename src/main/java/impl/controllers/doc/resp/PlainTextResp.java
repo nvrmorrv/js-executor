@@ -9,17 +9,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.springframework.http.MediaType;
 
 @ApiResponse(
       responseCode = "200",
       description = "OK",
-      content = {
-            @Content(
-                  mediaType = MediaType.TEXT_PLAIN_VALUE,
-                  schema = @Schema(implementation = String.class))
-      }
-)
+      content = {@Content(mediaType = "*/*",
+              schema = @Schema(type = "string"))})
 @Target({ANNOTATION_TYPE, METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface PlainTextResp {

@@ -34,13 +34,13 @@ import org.springframework.http.MediaType;
             required = true
       ),
       parameters = {@Parameter(
-            name = "blocking",
-            description = "specifies execution type",
-            in = ParameterIn.QUERY,
-            examples = {
-                  @ExampleObject(name = "async request", value = "false"),
-                  @ExampleObject(name = "blocking request", value = "true")},
-            required = true
+                      name = "blocking",
+                      description = "specifies execution type",
+                      in = ParameterIn.QUERY,
+                      examples = {
+                              @ExampleObject(name = "async request", value = "false"),
+                              @ExampleObject(name = "blocking request", value = "true")},
+                      required = true
       )})
 @ApiResponse(
       responseCode = "201",
@@ -50,13 +50,13 @@ import org.springframework.http.MediaType;
                   mediaType = MediaType.APPLICATION_JSON_VALUE,
                   schema = @Schema(implementation = ScriptId.class))
       })
-@ApiResponse
-      (responseCode = "200",
-            description = "Result of blocking request",
-            content = {
-                  @Content(
-                        mediaType = MediaType.TEXT_PLAIN_VALUE,
-                        schema = @Schema(implementation = String.class))
+@ApiResponse(
+        responseCode = "200",
+        description = "Result of blocking request",
+        content = {
+            @Content(
+                   mediaType = "*/*",
+                   schema = @Schema(implementation = ScriptId.class))
             })
 @ApiResponse
       (responseCode = "400",
