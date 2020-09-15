@@ -1,6 +1,8 @@
 package impl.repositories;
 
 import impl.repositories.entities.Execution;
+import io.micrometer.core.annotation.Timed;
+
 import java.util.Optional;
 import java.util.Set;
 

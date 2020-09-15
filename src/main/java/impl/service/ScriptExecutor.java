@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.micrometer.core.annotation.Timed;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,6 +29,7 @@ public class ScriptExecutor {
   }
 
   @Running
+  @Timed(value = "running_time")
   public void execute(String script,
                       AtomicReference<ExecStatus> status,
                       CompletableFuture<Runnable> ctCreation,
@@ -43,6 +45,7 @@ public class ScriptExecutor {
 
   @Async
   @Running
+  @Timed(value = "running_time")
   public CompletableFuture<Void> executeAsync(String script,
                AtomicReference<ExecStatus> status,
                CompletableFuture<Runnable> ctCreation,

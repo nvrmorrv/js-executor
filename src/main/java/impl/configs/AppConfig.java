@@ -4,6 +4,8 @@ import java.util.concurrent.Executor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import impl.controllers.interceptors.RequestCountInterceptor;
+import io.micrometer.core.aop.TimedAspect;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;
@@ -44,4 +46,8 @@ public class AppConfig {
      new ConstraintViolationProblemModule());
   }
 
+  @Bean
+  public TimedAspect timedAspect(MeterRegistry registry) {
+    return new TimedAspect(registry);
+  }
 }
