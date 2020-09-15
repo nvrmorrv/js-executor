@@ -20,6 +20,7 @@ plugins {
     id 'java'
     id 'application'
     id "org.sonarqube" version "2.7"
+    id 'com.google.cloud.tools.jib' version '2.5.0'
 }
 
 apply plugin: 'org.springframework.boot'
@@ -61,3 +62,4 @@ test {
     useJUnitPlatform()
 }
 
+jib.containerizingMode = 'packaged'

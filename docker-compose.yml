@@ -13,7 +13,7 @@ services:
     ports:
       - 3000:3000
   js-executor:
-    build: "."
+    image: "js-executor"
     container_name: "jsexec"
     ports:
       - 8080:8080
