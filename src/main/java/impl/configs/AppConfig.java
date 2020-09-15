@@ -3,6 +3,7 @@ package impl.configs;
 import java.util.concurrent.Executor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import impl.controllers.interceptors.RequestCountInterceptor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;
@@ -18,13 +19,15 @@ import org.zalando.problem.violations.ConstraintViolationProblemModule;
 public class AppConfig {
 
   @Bean
-  public WebMvcConfigurer webConfig(Executor applicationTaskExecutor) {
+  public WebMvcConfigurer webConfig(Executor applicationTaskExecutor,
+                                    RequestCountInterceptor requestCountInterceptor) {
     return new WebMvcConfigurer() {
       @Override
       public void addInterceptors(InterceptorRegistry registry) {
         WebContentInterceptor interceptor = new WebContentInterceptor();
         interceptor.addCacheMapping(CacheControl.noStore().noTransform(), "/*");
         registry.addInterceptor(interceptor);
+        registry.addInterceptor(requestCountInterceptor);
       }
 
       @Override

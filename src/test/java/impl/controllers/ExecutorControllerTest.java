@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import impl.controllers.interceptors.RequestCountInterceptor;
 import impl.service.ExecStatus;
 import impl.service.ScriptExecService;
 import impl.service.dto.ExecInfo;
@@ -35,6 +36,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 @ExtendWith(SpringExtension.class)
 @WebMvcTest(controllers = ExecutorController.class)
+@MockBean(RequestCountInterceptor.class)
 @AutoConfigureMockMvc
 public class ExecutorControllerTest {
   private final String EXEC_ID = "id";
