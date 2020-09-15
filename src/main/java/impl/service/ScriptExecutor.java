@@ -1,5 +1,6 @@
 package impl.service;
 
+import impl.aspects.annotations.Running;
 import impl.repositories.entities.Execution;
 import impl.service.exceptions.ExceptResException;
 import impl.service.exceptions.SyntaxErrorException;
@@ -10,6 +11,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,10 +22,12 @@ import org.springframework.stereotype.Component;
 public class ScriptExecutor {
   private final String lang;
 
-  public ScriptExecutor(@Value("${executor.lang}") String lang) {
+  public ScriptExecutor(@Value("${executor.lang}") String lang)
+  {
     this.lang = lang;
   }
 
+  @Running
   public void execute(String script,
                       AtomicReference<ExecStatus> status,
                       CompletableFuture<Runnable> ctCreation,
@@ -38,6 +42,7 @@ public class ScriptExecutor {
   }
 
   @Async
+  @Running
   public CompletableFuture<Void> executeAsync(String script,
                AtomicReference<ExecStatus> status,
                CompletableFuture<Runnable> ctCreation,

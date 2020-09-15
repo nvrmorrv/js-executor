@@ -20,7 +20,6 @@ public class ExecRepositoryImpl implements ExecRepository {
     map = registry.gaugeMapSize("map_size", Tags.empty(), new ConcurrentHashMap<>());
   }
 
-
   @Override
   public String addExecution(Execution execution) {
     String id = UUID.randomUUID().toString();
