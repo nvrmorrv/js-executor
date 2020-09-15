@@ -1,0 +1,8 @@
+global:
+  scrape_interval: "2s"
+scrape_configs:
+  - job_name: 'js-executor'
+    static_configs:
+      - targets: ['js-executor:8080']
+    metrics_path: '/actuator/prometheus'
+
