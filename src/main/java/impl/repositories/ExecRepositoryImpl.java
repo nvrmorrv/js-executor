@@ -7,11 +7,19 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ExecRepositoryImpl implements ExecRepository {
-  private final Map<String, Execution> map = new ConcurrentHashMap<>();
+  private final Map<String, Execution> map;
+
+  public ExecRepositoryImpl(MeterRegistry registry) {
+    map = registry.gaugeMapSize("map_size", Tags.empty(), new ConcurrentHashMap<>());
+  }
+
 
   @Override
   public String addExecution(Execution execution) {

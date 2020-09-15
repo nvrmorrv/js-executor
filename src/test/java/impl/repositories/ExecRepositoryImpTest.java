@@ -13,9 +13,16 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
+
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.Extensions;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class ExecRepositoryImpTest {
   private ExecRepositoryImpl repo;
   private final Execution EXECUTION = new Execution(
@@ -26,9 +33,12 @@ public class ExecRepositoryImpTest {
         new CompletableFuture<>()
   );
 
+  @Mock
+  MeterRegistry registry;
+
   @BeforeEach
   public void setup() {
-    repo = new ExecRepositoryImpl();
+    repo = new ExecRepositoryImpl(registry);
   }
 
   @Test
