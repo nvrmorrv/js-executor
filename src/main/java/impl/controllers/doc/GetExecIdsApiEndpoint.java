@@ -4,6 +4,7 @@ import static java.lang.annotation.ElementType.METHOD;
 
 import impl.controllers.dto.ScriptId;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -25,8 +26,9 @@ import org.springframework.http.MediaType;
       content = {
             @Content(
                   mediaType = MediaType.APPLICATION_JSON_VALUE,
-                  schema = @Schema(implementation = ArrayList.class))
-      }
+                  array = @ArraySchema(
+                          schema = @Schema(implementation = ScriptId.class)
+                  ))}
 )
 @InternalSerErrResp
 @Target({METHOD})

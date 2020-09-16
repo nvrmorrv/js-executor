@@ -73,8 +73,9 @@ public class ExecutorController {
   )
   @Hidden
   public ResponseEntity<StreamingResponseBody> executeScriptWithBlocking(@RequestBody ExecReq body) {
-    return ResponseEntity.ok(
-          outputStream -> {
+    return ResponseEntity.ok()
+            .contentType(MediaType.TEXT_PLAIN)
+            .body(outputStream -> {
             String id = service.createExec(body.getScript(), outputStream);
             writeId(getScriptIdWithLinks(id), outputStream);
             service.executeScript(id);
