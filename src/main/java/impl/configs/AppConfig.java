@@ -3,7 +3,6 @@ package impl.configs;
 import java.util.concurrent.Executor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import impl.controllers.interceptors.RequestCountInterceptor;
 import io.micrometer.core.aop.TimedAspect;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.context.annotation.Bean;
@@ -21,15 +20,13 @@ import org.zalando.problem.violations.ConstraintViolationProblemModule;
 public class AppConfig {
 
   @Bean
-  public WebMvcConfigurer webConfig(Executor applicationTaskExecutor,
-                                    RequestCountInterceptor requestCountInterceptor) {
+  public WebMvcConfigurer webConfig(Executor applicationTaskExecutor) {
     return new WebMvcConfigurer() {
       @Override
       public void addInterceptors(InterceptorRegistry registry) {
         WebContentInterceptor interceptor = new WebContentInterceptor();
         interceptor.addCacheMapping(CacheControl.noStore().noTransform(), "/*");
         registry.addInterceptor(interceptor);
-        registry.addInterceptor(requestCountInterceptor);
       }
 
       @Override
