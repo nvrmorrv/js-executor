@@ -7,7 +7,6 @@ services:
       - 9090:9090
     volumes:
       - "./prometheus.yml:/etc/prometheus/prometheus.yml"
-      - "./prometheus-rules.yml:/etc/prometheus/prometheus-rules.yml"
   grafana:
     image: "grafana/grafana:7.1.0"
     container_name: "grafana"
