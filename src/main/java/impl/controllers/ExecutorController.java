@@ -2,6 +2,7 @@ package impl.controllers;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+import static org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder.fromController;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -20,15 +21,16 @@ import impl.controllers.dto.CommonStatusResp;
 import impl.controllers.dto.ScriptId;
 import impl.service.ScriptExecService;
 import impl.service.dto.ExecInfo;
-import io.micrometer.core.instrument.MeterRegistry;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.Link;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -46,7 +48,6 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 @RestController
 @RequestMapping (
-      path = "/executor/js",
       produces = {MediaType.APPLICATION_JSON_VALUE})
 @Tag(name = "JS executor")
 @AllArgsConstructor
@@ -54,19 +55,49 @@ public class ExecutorController {
   private final ScriptExecService service;
   private final ObjectMapper jsonMapper;
 
+  @GetMapping("/")
+  @GetExecIdsApiEndpoint
+  public ResponseEntity<CollectionModel<?>> getRoot() {
+    return ResponseEntity.ok(CollectionModel.of(
+            Collections.emptyList(),
+            linkTo(methodOn(getClass()).getScripts()).withRel("scripts"),
+            linkTo(methodOn(getClass()).getRoot()).withSelfRel()
+    ));
+  }
+
+  @GetMapping("/scripts")
+  @GetExecIdsApiEndpoint
+  public ResponseEntity<CollectionModel<ScriptId>> getScripts() {
+    Link self = linkTo(methodOn(getClass()).getScripts()).withSelfRel();
+    Link blockExec = Link.of(
+            fromController(getClass())
+                    .path("/scripts")
+                    .queryParam("blocking", "true")
+                    .toUriString(), "async")
+            .withType("POST");
+    Link asyncExec = Link.of(
+            fromController(getClass())
+                    .path("/scripts")
+                    .queryParam("blocking", "false")
+                    .toUriString(), "blocking")
+            .withType("POST");
+    List<ScriptId> scripts = getScriptListResp(service.getExecutionIds());
+    return ResponseEntity.ok(CollectionModel.of(scripts, self, blockExec, asyncExec));
+  }
+
   @PostMapping(
-        path = "/script",
+        path = "/scripts",
         params = "blocking=false",
         consumes = MediaType.APPLICATION_JSON_VALUE
   )
   @ExecuteScriptApiEndpoint
   public ResponseEntity<ScriptId> executeScriptAsync(@RequestBody ExecReq body) {
     String id = service.executeScriptAsync(body.getScript());
-    return new ResponseEntity<>(getScriptIdWithLinks(id), HttpStatus.CREATED);
+    return new ResponseEntity<>(getScriptId(id), HttpStatus.CREATED);
   }
 
   @PostMapping(
-        path = "/script",
+        path = "/scripts",
         params = "blocking=true",
         consumes = MediaType.APPLICATION_JSON_VALUE,
         produces = MediaType.TEXT_PLAIN_VALUE
@@ -74,65 +105,62 @@ public class ExecutorController {
   @Hidden
   public ResponseEntity<StreamingResponseBody> executeScriptWithBlocking(@RequestBody ExecReq body) {
     return ResponseEntity.ok()
-            .contentType(MediaType.TEXT_PLAIN)
+            .contentType(MediaType.parseMediaType("text/plain;charset=UTF-8"))
             .body(outputStream -> {
-            String id = service.createExec(body.getScript(), outputStream);
-            writeId(getScriptIdWithLinks(id), outputStream);
-            service.executeScript(id);
+              String id = service.createExec(body.getScript(), outputStream);
+              writeId(getScriptId(id), outputStream);
+              service.executeScript(id);
           });
   }
 
-  @GetMapping("/script/{id}")
+  @GetMapping("/scripts/{id}")
   @GetExecStatusApiEndpoint
-  public ResponseEntity<StatusResp> getExecutionStatus(@PathVariable(name = "id") String scriptId) {
+  public ResponseEntity<StatusResp> getScript(@PathVariable(name = "id") String scriptId) {
     ExecInfo info = service.getExecutionStatus(scriptId);
     StatusResp resp = getExecResp(info);
-    resp.add(linkTo(methodOn(ExecutorController.class).getExecutionScript(scriptId)).withRel("code"));
-    resp.add(linkTo(methodOn(ExecutorController.class).getExecutionOutput(scriptId)).withRel("output"));
+    resp.add(linkTo(methodOn(ExecutorController.class).getScript(scriptId)).withSelfRel());
+    resp.add(linkTo(methodOn(ExecutorController.class).cancelExecution(scriptId)).withRel("cancel").withType("PUT"));
+    resp.add(linkTo(methodOn(ExecutorController.class).deleteScript(scriptId)).withRel("delete").withType("DELETE"));
+    resp.add(linkTo(methodOn(ExecutorController.class).getScriptText(scriptId)).withRel("text"));
+    resp.add(linkTo(methodOn(ExecutorController.class).getScriptOutput(scriptId)).withRel("output"));
     return ResponseEntity.ok(resp);
   }
 
+  @PutMapping("/scripts/{id}")
+  @CancelExecApiEndPoint
+  public ResponseEntity<ScriptId> cancelExecution(@PathVariable(name = "id") String scriptId) {
+    service.cancelExecution(scriptId);
+    return ResponseEntity.ok(getScriptId(scriptId));
+  }
+
+  @DeleteMapping("/scripts/{id}")
+  @DeleteExecApiEndpoint
+  public ResponseEntity.HeadersBuilder<?> deleteScript(@PathVariable(name = "id") String scriptId) {
+    service.deleteExecution(scriptId);
+    return ResponseEntity.noContent();
+  }
+
   @GetMapping(
-        path = "/script/{id}/code",
+        path = "/scripts/{id}/text",
         produces = MediaType.TEXT_PLAIN_VALUE
   )
   @GetExecScriptApiEndpoint
-  public ResponseEntity<String> getExecutionScript(@PathVariable(name = "id") String scriptId) {
+  public ResponseEntity<String> getScriptText(@PathVariable(name = "id") String scriptId) {
     return ResponseEntity.ok(service.getExecutionScript(scriptId));
   }
 
   @GetMapping(
-        path = "/script/{id}/output",
+        path = "/scripts/{id}/output",
         produces = MediaType.TEXT_PLAIN_VALUE
   )
   @GetExecOutputApiEndpoint
-  public ResponseEntity<String> getExecutionOutput(@PathVariable(name = "id") String scriptId) {
+  public ResponseEntity<String> getScriptOutput(@PathVariable(name = "id") String scriptId) {
     return ResponseEntity.ok(service.getExecutionOutput(scriptId));
-  }
-
-  @PutMapping("/script/{id}")
-  @CancelExecApiEndPoint
-  public ResponseEntity<Void> cancelExecution(@PathVariable(name = "id") String scriptId) {
-    service.cancelExecution(scriptId);
-    return new ResponseEntity<>(HttpStatus.OK);
-  }
-
-  @DeleteMapping("/script/{id}")
-  @DeleteExecApiEndpoint
-  public ResponseEntity<Void> deleteExecution(@PathVariable(name = "id") String scriptId) {
-    service.deleteExecution(scriptId);
-    return new ResponseEntity<>(HttpStatus.OK);
-  }
-
-  @GetMapping("/script-list")
-  @GetExecIdsApiEndpoint
-  public ResponseEntity<CollectionModel<ScriptId>> getAllExecutions() {
-    return ResponseEntity.ok(CollectionModel.of(getScriptListResp(service.getExecutionIds())));
   }
 
   private List<ScriptId> getScriptListResp(List<String> scriptList) {
     return scriptList.stream()
-          .map(this::getScriptIdWithLinks)
+          .map(this::getScriptId)
           .collect(Collectors.toList());
   }
 
@@ -144,11 +172,9 @@ public class ExecutorController {
     }
   }
 
-  private ScriptId getScriptIdWithLinks(String id) {
+  private ScriptId getScriptId(String id) {
     ScriptId scriptId = new ScriptId(id);
-    scriptId.add(linkTo(methodOn(ExecutorController.class).getExecutionStatus(id)).withRel("status").withType("GET"));
-    scriptId.add(linkTo(methodOn(ExecutorController.class).cancelExecution(id)).withRel("cancel").withType("PUT"));
-    scriptId.add(linkTo(methodOn(ExecutorController.class).getExecutionStatus(id)).withRel("delete").withType("DELETE"));
+    scriptId.add(linkTo(methodOn(ExecutorController.class).getScript(id)).withSelfRel());
     return scriptId;
   }
 

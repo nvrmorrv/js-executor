@@ -13,7 +13,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import impl.controllers.doc.resp.InternalSerErrResp;
-import java.util.ArrayList;
 import org.springframework.http.MediaType;
 
 @Operation(
