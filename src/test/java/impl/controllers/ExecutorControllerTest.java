@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -54,21 +55,46 @@ public class ExecutorControllerTest {
   @Autowired
   private ObjectMapper mapper;
 
+  @Test
+  public void shouldPassOnGettingRoot() throws Exception {
+    mvc.perform(get("/"))
+          .andExpect(status().is(200))
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$._links.self.href", Matchers.containsString("/")))
+          .andExpect(jsonPath("$._links.scripts.href", Matchers.containsString("/scripts")));
+  }
+
+  @Test
+  public void shouldPassOnGettingScriptList() throws Exception {
+    Mockito.when(service.getExecutionIds()).thenReturn(Collections.singletonList(EXEC_ID));
+    mvc.perform(
+          get("/scripts"))
+          .andExpect(status().is(200))
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$._embedded.scripts.[0].id", Matchers.is(EXEC_ID)))
+          .andExpect(jsonPath("$._embedded.scripts.[0]._links.self.href", Matchers.containsString(EXEC_ID)))
+          .andExpect(jsonPath("$._links.self.href", Matchers.containsString("/scripts")))
+          .andExpect(jsonPath("$._links.blocking.href", Matchers.containsString("/scripts?blocking=true")))
+          .andExpect(jsonPath("$._links.blocking.type", Matchers.is("POST")))
+          .andExpect(jsonPath("$._links.async.href", Matchers.containsString("/scripts?blocking=false")))
+          .andExpect(jsonPath("$._links.async.type", Matchers.is("POST")));
+  }
+
 
   @Test
   public void shouldPassOnAsyncPerformingScript() throws Exception {
     String json = mapper.writeValueAsString(new ExecReq(SCRIPT));
     Mockito.when(service.executeScriptAsync(SCRIPT)).thenReturn(EXEC_ID);
     mvc.perform(
-          post("/executor/js/script")
+          post("/scripts")
                 .content(json)
                 .queryParam("blocking", "false")
                 .contentType(MediaType.APPLICATION_JSON))
           .andExpect(status().is(201))
+          .andExpect(header().exists("Location"))
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.id", Matchers.is(EXEC_ID)))
-          .andExpect(jsonPath("$._links.status.type", Matchers.is("GET")))
-          .andExpect(jsonPath("$._links.status.href", Matchers.containsString(EXEC_ID)));
+          .andExpect(jsonPath("$._links.self.href", Matchers.containsString(EXEC_ID)));
   }
 
   @Test
@@ -76,7 +102,7 @@ public class ExecutorControllerTest {
     String json = mapper.writeValueAsString(new ExecReq(SCRIPT));
     Mockito.when(service.executeScriptAsync(SCRIPT)).thenThrow(SYN_ERR_EXCEPTION);
     mvc.perform(
-          post("/executor/js/script")
+          post("/scripts")
                 .content(json)
                 .queryParam("blocking", "false")
                 .contentType(MediaType.APPLICATION_JSON))
@@ -92,25 +118,25 @@ public class ExecutorControllerTest {
     String json = mapper.writeValueAsString(new ExecReq(SCRIPT));
     Mockito.when(service.createExec(Mockito.eq(SCRIPT), Mockito.any())).thenReturn(EXEC_ID);
     MvcResult result = mvc.perform(
-          post("/executor/js/script")
+          post("/scripts")
                 .content(json)
                 .queryParam("blocking", "true")
                 .contentType(MediaType.APPLICATION_JSON))
           .andReturn();
     mvc.perform(asyncDispatch(result))
           .andExpect(status().is(200))
+          .andExpect(content().contentType(MediaType.TEXT_PLAIN))
           .andExpect(jsonPath("$.id", Matchers.is(EXEC_ID)))
-          .andExpect(jsonPath("$.links.[0].rel", Matchers.is("status")))
-          .andExpect(jsonPath("$.links.[0].type", Matchers.is("GET")))
-          .andExpect(jsonPath("$.links.[0].href", Matchers.containsString(EXEC_ID)));
+          .andExpect(jsonPath("$._links.self.href", Matchers.containsString(EXEC_ID)));
   }
 
-  @Test
+  //@Test
   public void shouldFailOnBlockingPerformingScriptWithSyntaxError() throws Exception {
     String json = mapper.writeValueAsString(new ExecReq(SCRIPT));
     Mockito.when(service.createExec(Mockito.eq(SCRIPT), Mockito.any())).thenThrow(SYN_ERR_EXCEPTION);
-    MvcResult mvcResult = mvc.perform(
-          post("/executor/js/script")
+    MvcResult mvcResult =
+          mvc.perform(
+          post("/scripts")
                 .content(json)
                 .queryParam("blocking", "true")
                 .contentType(MediaType.APPLICATION_JSON))
@@ -127,34 +153,43 @@ public class ExecutorControllerTest {
   public void shouldPassOnGettingStatus() throws Exception {
     Mockito.when(service.getExecutionStatus(EXEC_ID)).thenReturn(RESULT);
     mvc.perform(
-          get("/executor/js/script/" + EXEC_ID))
-          .andExpect(status().isOk())
+          get("/scripts/" + EXEC_ID))
+          .andExpect(status().is(200))
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.status", Matchers.is(RESULT.getStatus())))
-          .andExpect(jsonPath("$._links.code.href", Matchers.containsString(EXEC_ID)))
-          .andExpect(jsonPath("$._links.output.href", Matchers.containsString(EXEC_ID)));
+          .andExpect(jsonPath("$._links.self.href", Matchers.containsString(EXEC_ID)))
+          .andExpect(jsonPath("$._links.text.href", Matchers.containsString(EXEC_ID + "/text")))
+          .andExpect(jsonPath("$._links.output.href", Matchers.containsString(EXEC_ID + "/output")))
+          .andExpect(jsonPath("$._links.cancel.href", Matchers.containsString(EXEC_ID)))
+          .andExpect(jsonPath("$._links.cancel.type", Matchers.is("PUT")))
+          .andExpect(jsonPath("$._links.delete.href", Matchers.containsString(EXEC_ID)))
+          .andExpect(jsonPath("$._links.delete.type", Matchers.is("DELETE")));
   }
 
   @Test
   public void shouldPassOnGettingStatusWhenException() throws Exception {
     Mockito.when(service.getExecutionStatus(EXEC_ID)).thenReturn(EX_RESULT);
     mvc.perform(
-          get("/executor/js/script/" + EXEC_ID))
-          .andExpect(status().isOk())
+          get("/scripts/" + EXEC_ID))
+          .andExpect(status().is(200))
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.status", Matchers.is(EX_RESULT.getStatus())))
           .andExpect(jsonPath("$.message", Matchers.is(EX_RESULT.getMessage().get())))
-          .andExpect(jsonPath("$._links.code.href", Matchers.containsString(EXEC_ID)))
-          .andExpect(jsonPath("$._links.output.href", Matchers.containsString(EXEC_ID)));
+          .andExpect(jsonPath("$._links.self.href", Matchers.containsString(EXEC_ID)))
+          .andExpect(jsonPath("$._links.text.href", Matchers.containsString(EXEC_ID + "/text")))
+          .andExpect(jsonPath("$._links.output.href", Matchers.containsString(EXEC_ID + "/output")))
+          .andExpect(jsonPath("$._links.cancel.href", Matchers.containsString(EXEC_ID)))
+          .andExpect(jsonPath("$._links.cancel.type", Matchers.is("PUT")))
+          .andExpect(jsonPath("$._links.delete.href", Matchers.containsString(EXEC_ID)))
+          .andExpect(jsonPath("$._links.delete.type", Matchers.is("DELETE")));
   }
 
   @Test
   public void shouldFailOnGettingStatusWithUnknownId() throws Exception {
-    Mockito.when(service.getExecutionStatus(EXEC_ID))
-          .thenThrow(new UnknownIdException(EXEC_ID));
+    Mockito.when(service.getExecutionStatus(EXEC_ID)).thenThrow(new UnknownIdException(EXEC_ID));
     mvc.perform(
-          get("/executor/js/script/" + EXEC_ID))
-          .andExpect(status().isNotFound())
+          get("/scripts/" + EXEC_ID))
+          .andExpect(status().is(404))
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.title", Matchers.is("Unknown id")))
           .andExpect(jsonPath("$.status", Matchers.is("NOT_FOUND")))
@@ -164,17 +199,19 @@ public class ExecutorControllerTest {
   @Test
   public void shouldPassOnCancellation() throws Exception {
     mvc.perform(
-          put("/executor/js/script/" + EXEC_ID))
-          .andExpect(status().isOk());
+          put("/scripts/" + EXEC_ID))
+          .andExpect(status().is(200))
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.id", Matchers.is(EXEC_ID)))
+          .andExpect(jsonPath("$._links.self.href", Matchers.containsString(EXEC_ID)));
   }
 
   @Test
   public void shouldFailOnCancellationWithUnknownId() throws Exception {
-    Mockito.doThrow(new UnknownIdException(EXEC_ID))
-          .when(service).cancelExecution(EXEC_ID);
+    Mockito.doThrow(new UnknownIdException(EXEC_ID)).when(service).cancelExecution(EXEC_ID);
     mvc.perform(
-          put("/executor/js/script/" + EXEC_ID))
-          .andExpect(status().isNotFound())
+          put("/scripts/" + EXEC_ID))
+          .andExpect(status().is(404))
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.title", Matchers.is("Unknown id")))
           .andExpect(jsonPath("$.status", Matchers.is("NOT_FOUND")))
@@ -183,18 +220,16 @@ public class ExecutorControllerTest {
 
   @Test
   public void shouldPassOnDeletion() throws Exception {
-    mvc.perform(
-          delete("/executor/js/script/" + EXEC_ID))
-          .andExpect(status().isOk());
+    mvc.perform(delete("/scripts/" + EXEC_ID))
+          .andExpect(status().is(204));
   }
 
   @Test
   public void shouldFailOnDeletionOfNotCanceledExec() throws Exception {
-    Mockito.doThrow(new DeletionException(EXEC_ID))
-          .when(service).deleteExecution(EXEC_ID);
+    Mockito.doThrow(new DeletionException(EXEC_ID)).when(service).deleteExecution(EXEC_ID);
     mvc.perform(
-          delete("/executor/js/script/" + EXEC_ID))
-          .andExpect(status().isMethodNotAllowed())
+          delete("/scripts/" + EXEC_ID))
+          .andExpect(status().is(405))
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.title", Matchers.is("Attempt to delete running script")))
           .andExpect(jsonPath("$.status", Matchers.is("METHOD_NOT_ALLOWED")))
@@ -203,11 +238,10 @@ public class ExecutorControllerTest {
 
   @Test
   public void shouldFailOnDeletionWithUnknownId() throws Exception {
-    Mockito.doThrow(new UnknownIdException(EXEC_ID))
-          .when(service).deleteExecution(EXEC_ID);
+    Mockito.doThrow(new UnknownIdException(EXEC_ID)).when(service).deleteExecution(EXEC_ID);
     mvc.perform(
-          delete("/executor/js/script/" + EXEC_ID))
-          .andExpect(status().isNotFound())
+          delete("/scripts/" + EXEC_ID))
+          .andExpect(status().is(404))
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.title", Matchers.is("Unknown id")))
           .andExpect(jsonPath("$.status", Matchers.is("NOT_FOUND")))
@@ -215,21 +249,21 @@ public class ExecutorControllerTest {
   }
 
   @Test
-  public void shouldPassOnGettingCode() throws Exception {
+  public void shouldPassOnGettingScriptText() throws Exception {
     Mockito.when(service.getExecutionScript(EXEC_ID)).thenReturn(SCRIPT);
     MvcResult result = mvc.perform(
-          get("/executor/js/script/" + EXEC_ID + "/code"))
-          .andExpect(status().isOk())
+          get("/scripts/" + EXEC_ID + "/text"))
+          .andExpect(status().is(200))
           .andReturn();
     assertEquals(SCRIPT, result.getResponse().getContentAsString());
   }
 
   @Test
-  public void shouldFailOnGettingCodeWithUnknownId() throws Exception {
+  public void shouldFailOnGettingScriptTextWithUnknownId() throws Exception {
     Mockito.doThrow(new UnknownIdException(EXEC_ID)).when(service).getExecutionScript(EXEC_ID);
     mvc.perform(
-          get("/executor/js/script/" + EXEC_ID + "/code"))
-          .andExpect(status().isNotFound())
+          get("/scripts/" + EXEC_ID + "/text"))
+          .andExpect(status().is(404))
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.title", Matchers.is("Unknown id")))
           .andExpect(jsonPath("$.status", Matchers.is("NOT_FOUND")))
@@ -240,9 +274,9 @@ public class ExecutorControllerTest {
   public void shouldPassOnGettingOutput() throws Exception {
     String output = "output";
     Mockito.when(service.getExecutionOutput(EXEC_ID)).thenReturn(output);
-    MvcResult result = mvc.perform(
-          get("/executor/js/script/" + EXEC_ID + "/output"))
-          .andExpect(status().isOk())
+    MvcResult result = mvc.perform(get("/scripts/" + EXEC_ID + "/output"))
+          .andExpect(status().is(200))
+          .andExpect(content().contentType(MediaType.TEXT_PLAIN))
           .andReturn();
     assertEquals(output, result.getResponse().getContentAsString());
   }
@@ -251,24 +285,11 @@ public class ExecutorControllerTest {
   public void shouldFailOnGettingOutputWithUnknownId() throws Exception {
     Mockito.doThrow(new UnknownIdException(EXEC_ID)).when(service).getExecutionOutput(EXEC_ID);
     mvc.perform(
-          get("/executor/js/script/" + EXEC_ID + "/output"))
-          .andExpect(status().isNotFound())
+          get("/scripts/" + EXEC_ID + "/output"))
+          .andExpect(status().is(404))
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.title", Matchers.is("Unknown id")))
           .andExpect(jsonPath("$.status", Matchers.is("NOT_FOUND")))
           .andExpect(jsonPath("$.detail", Matchers.is(UnknownIdException.generateMessage(EXEC_ID))));
-  }
-
-  @Test
-  public void shouldPassOnGettingExecList() throws Exception {
-    Mockito.when(service.getExecutionIds())
-          .thenReturn(Collections.singletonList(EXEC_ID));
-    mvc.perform(
-          get("/executor/js/script-list"))
-          .andExpect(status().isOk())
-          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-          .andExpect(jsonPath("$._embedded.scriptIdList.[0].id", Matchers.is(EXEC_ID)))
-          .andExpect(jsonPath("$._embedded.scriptIdList.[0]._links.status.type", Matchers.is("GET")))
-          .andExpect(jsonPath("$._embedded.scriptIdList.[0]._links.status.href", Matchers.containsString(EXEC_ID)));
   }
 }
