@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
 
 import impl.controllers.doc.resp.InternalSerErrResp;
 import impl.controllers.doc.resp.NotFoundResp;
-import impl.controllers.doc.resp.OkEmptyResp;
+import impl.controllers.doc.resp.EmptyResp;
 import org.springframework.http.MediaType;
 import org.zalando.problem.Problem;
 
@@ -33,7 +33,7 @@ import org.zalando.problem.Problem;
                 @Content(
                         mediaType = MediaType.APPLICATION_JSON_VALUE,
                         schema = @Schema(implementation = Problem.class)) })
-@OkEmptyResp
+@EmptyResp(code = "204")
 @NotFoundResp
 @InternalSerErrResp
 @Target({METHOD})

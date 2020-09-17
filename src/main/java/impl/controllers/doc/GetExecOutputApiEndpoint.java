@@ -4,7 +4,7 @@ import static java.lang.annotation.ElementType.METHOD;
 
 import impl.controllers.doc.resp.InternalSerErrResp;
 import impl.controllers.doc.resp.NotFoundResp;
-import impl.controllers.doc.resp.PlainTextResp;
+import impl.controllers.doc.resp.TextPlainResp;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -20,7 +20,7 @@ import java.lang.annotation.Target;
             in = ParameterIn.PATH,
             required = true
       )})
-@PlainTextResp
+@TextPlainResp
 @NotFoundResp
 @InternalSerErrResp
 @Target({METHOD})

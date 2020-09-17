@@ -6,13 +6,14 @@ import static org.springframework.web.servlet.mvc.method.annotation.MvcUriCompon
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import impl.controllers.doc.CancelExecApiEndPoint;
+import impl.controllers.doc.CancelExecApiEndpoint;
 import impl.controllers.doc.DeleteExecApiEndpoint;
 import impl.controllers.doc.ExecuteScriptApiEndpoint;
-import impl.controllers.doc.GetExecIdsApiEndpoint;
+import impl.controllers.doc.GetExecListApiEndpoint;
 import impl.controllers.doc.GetExecOutputApiEndpoint;
 import impl.controllers.doc.GetExecScriptApiEndpoint;
 import impl.controllers.doc.GetExecStatusApiEndpoint;
+import impl.controllers.doc.GetRootApiEndpoint;
 import impl.controllers.dto.ExceptionStatusResp;
 import impl.controllers.dto.ExecReq;
 import impl.controllers.dto.StatusResp;
@@ -48,7 +49,7 @@ public class ExecutorController {
   private final ScriptExecService service;
 
   @GetMapping("/")
-  @GetExecIdsApiEndpoint
+  @GetRootApiEndpoint
   public ResponseEntity<CollectionModel<?>> getRoot() {
     return ResponseEntity.ok()
           .contentType(MediaType.APPLICATION_JSON)
@@ -59,7 +60,7 @@ public class ExecutorController {
   }
 
   @GetMapping("/scripts")
-  @GetExecIdsApiEndpoint
+  @GetExecListApiEndpoint
   public ResponseEntity<CollectionModel<ScriptId>> getScripts() {
     Link self = linkTo(methodOn(getClass()).getScripts()).withSelfRel();
     Link blockExec = Link.of(fromController(getClass())
@@ -120,7 +121,7 @@ public class ExecutorController {
   }
 
   @PutMapping("/scripts/{id}")
-  @CancelExecApiEndPoint
+  @CancelExecApiEndpoint
   public ResponseEntity<ScriptId> cancelExecution(@PathVariable(name = "id") String scriptId) {
     service.cancelExecution(scriptId);
     return ResponseEntity.ok()

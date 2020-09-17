@@ -22,8 +22,10 @@ import org.springframework.http.MediaType;
 
 @Operation(
       summary = "Execute script",
-      description = "There are async and blocking requests. " +
-            "The first one returns execution id, the second -- execution result info.",
+      description =
+            "There are async and blocking requests. " +
+                  "The first one returns the execution id, " +
+                  "the second also returns id along with execution output in a streaming way.",
       tags = { "script" },
       requestBody = @RequestBody(
             description = "script for executing",
@@ -33,14 +35,15 @@ import org.springframework.http.MediaType;
             ),
             required = true
       ),
-      parameters = {@Parameter(
-                      name = "blocking",
-                      description = "specifies execution type",
-                      in = ParameterIn.QUERY,
-                      examples = {
-                              @ExampleObject(name = "async request", value = "false"),
-                              @ExampleObject(name = "blocking request", value = "true")},
-                      required = true
+      parameters = {
+            @Parameter(
+                  name = "blocking",
+                  description = "specifies execution type",
+                  in = ParameterIn.QUERY,
+                  examples = {
+                        @ExampleObject(name = "async request", value = "false"),
+                        @ExampleObject(name = "blocking request", value = "true")},
+                  required = true
       )})
 @ApiResponse(
       responseCode = "201",
@@ -51,20 +54,20 @@ import org.springframework.http.MediaType;
                   schema = @Schema(implementation = ScriptId.class))
       })
 @ApiResponse(
-        responseCode = "200",
-        description = "Result of blocking request",
-        content = {
+      responseCode = "200",
+      description = "Result of blocking request",
+      content = {
             @Content(
                    mediaType = "*/*",
                    schema = @Schema(implementation = ScriptId.class))
             })
-@ApiResponse
-      (responseCode = "400",
-            description = "Syntax error",
-            content = {
-                  @Content(
-                        mediaType = MediaType.APPLICATION_JSON_VALUE,
-                        schema = @Schema(implementation = Problem.class))
+@ApiResponse(
+      responseCode = "400",
+      description = "Syntax error",
+      content = {
+            @Content(
+                  mediaType = MediaType.APPLICATION_JSON_VALUE,
+                  schema = @Schema(implementation = Problem.class))
             })
 @InternalSerErrResp
 @Target({METHOD})

@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
 
 import impl.controllers.doc.resp.InternalSerErrResp;
 import impl.controllers.doc.resp.NotFoundResp;
-import impl.controllers.doc.resp.OkEmptyResp;
+import impl.controllers.doc.resp.EmptyResp;
 
 @Operation(
       summary = "Cancel execution",
@@ -21,10 +21,10 @@ import impl.controllers.doc.resp.OkEmptyResp;
             in = ParameterIn.PATH,
             required = true
       )})
-@OkEmptyResp
+@EmptyResp(code = "200")
 @NotFoundResp
 @InternalSerErrResp
 @Target({METHOD})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface CancelExecApiEndPoint {
+public @interface CancelExecApiEndpoint {
 }

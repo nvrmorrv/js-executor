@@ -17,5 +17,5 @@ import java.lang.annotation.Target;
               schema = @Schema(type = "string"))})
 @Target({ANNOTATION_TYPE, METHOD})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface PlainTextResp {
+public @interface TextPlainResp {
 }
