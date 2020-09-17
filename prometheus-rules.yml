@@ -1,6 +1,0 @@
-groups:
-  - name: 'js_executor'
-    interval: '30s'
-    rules:
-      - record: 'js_executor:requests:count'
-        expr: 'rate(http_server_requests_seconds_count{uri=~"/executor/js/.*"}[30s])'

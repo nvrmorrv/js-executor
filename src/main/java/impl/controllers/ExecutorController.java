@@ -6,7 +6,6 @@ import static org.springframework.web.servlet.mvc.method.annotation.MvcUriCompon
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import impl.controllers.doc.CancelExecApiEndPoint;
 import impl.controllers.doc.DeleteExecApiEndpoint;
 import impl.controllers.doc.ExecuteScriptApiEndpoint;
@@ -31,7 +30,6 @@ import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.Link;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -40,75 +38,70 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-
-
 @RestController
-@RequestMapping (
-      produces = {MediaType.APPLICATION_JSON_VALUE})
 @Tag(name = "JS executor")
 @AllArgsConstructor
 public class ExecutorController {
   private final ScriptExecService service;
-  private final ObjectMapper jsonMapper;
 
   @GetMapping("/")
   @GetExecIdsApiEndpoint
   public ResponseEntity<CollectionModel<?>> getRoot() {
-    return ResponseEntity.ok(CollectionModel.of(
-            Collections.emptyList(),
-            linkTo(methodOn(getClass()).getScripts()).withRel("scripts"),
-            linkTo(methodOn(getClass()).getRoot()).withSelfRel()
-    ));
+    return ResponseEntity.ok()
+          .contentType(MediaType.APPLICATION_JSON)
+          .body(CollectionModel.of(
+                Collections.emptyList(),
+                linkTo(methodOn(getClass()).getScripts()).withRel("scripts"),
+                linkTo(methodOn(getClass()).getRoot()).withSelfRel()));
   }
 
   @GetMapping("/scripts")
   @GetExecIdsApiEndpoint
   public ResponseEntity<CollectionModel<ScriptId>> getScripts() {
     Link self = linkTo(methodOn(getClass()).getScripts()).withSelfRel();
-    Link blockExec = Link.of(
-            fromController(getClass())
-                    .path("/scripts")
-                    .queryParam("blocking", "true")
-                    .toUriString(), "async")
-            .withType("POST");
-    Link asyncExec = Link.of(
-            fromController(getClass())
-                    .path("/scripts")
-                    .queryParam("blocking", "false")
-                    .toUriString(), "blocking")
-            .withType("POST");
+    Link blockExec = Link.of(fromController(getClass())
+                .path("/scripts")
+                .queryParam("blocking", "false")
+                .toUriString(), "async")
+          .withType("POST");
+    Link asyncExec = Link.of(fromController(getClass())
+                .path("/scripts")
+                .queryParam("blocking", "true")
+                .toUriString(), "blocking")
+          .withType("POST");
     List<ScriptId> scripts = getScriptListResp(service.getExecutionIds());
-    return ResponseEntity.ok(CollectionModel.of(scripts, self, blockExec, asyncExec));
+    return ResponseEntity.ok()
+          .contentType(MediaType.APPLICATION_JSON)
+          .body(CollectionModel.of(scripts, self, blockExec, asyncExec));
   }
 
   @PostMapping(
         path = "/scripts",
         params = "blocking=false",
-        consumes = MediaType.APPLICATION_JSON_VALUE
-  )
+        consumes = MediaType.APPLICATION_JSON_VALUE)
   @ExecuteScriptApiEndpoint
   public ResponseEntity<ScriptId> executeScriptAsync(@RequestBody ExecReq body) {
     String id = service.executeScriptAsync(body.getScript());
-    return new ResponseEntity<>(getScriptId(id), HttpStatus.CREATED);
+    ScriptId scriptId = getScriptId(id);
+    return ResponseEntity.created(scriptId.getRequiredLink("self").toUri())
+          .contentType(MediaType.APPLICATION_JSON)
+          .body(scriptId);
   }
 
   @PostMapping(
         path = "/scripts",
         params = "blocking=true",
-        consumes = MediaType.APPLICATION_JSON_VALUE,
-        produces = MediaType.TEXT_PLAIN_VALUE
-  )
+        consumes = MediaType.APPLICATION_JSON_VALUE)
   @Hidden
   public ResponseEntity<StreamingResponseBody> executeScriptWithBlocking(@RequestBody ExecReq body) {
     return ResponseEntity.ok()
-            .contentType(MediaType.parseMediaType("text/plain;charset=UTF-8"))
+            .contentType(MediaType.TEXT_PLAIN)
             .body(outputStream -> {
               String id = service.createExec(body.getScript(), outputStream);
-              writeId(getScriptId(id), outputStream);
+              writeIdToStream(getScriptId(id), outputStream);
               service.executeScript(id);
           });
   }
@@ -123,39 +116,35 @@ public class ExecutorController {
     resp.add(linkTo(methodOn(ExecutorController.class).deleteScript(scriptId)).withRel("delete").withType("DELETE"));
     resp.add(linkTo(methodOn(ExecutorController.class).getScriptText(scriptId)).withRel("text"));
     resp.add(linkTo(methodOn(ExecutorController.class).getScriptOutput(scriptId)).withRel("output"));
-    return ResponseEntity.ok(resp);
+    return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(resp);
   }
 
   @PutMapping("/scripts/{id}")
   @CancelExecApiEndPoint
   public ResponseEntity<ScriptId> cancelExecution(@PathVariable(name = "id") String scriptId) {
     service.cancelExecution(scriptId);
-    return ResponseEntity.ok(getScriptId(scriptId));
+    return ResponseEntity.ok()
+          .contentType(MediaType.APPLICATION_JSON)
+          .body(getScriptId(scriptId));
   }
 
   @DeleteMapping("/scripts/{id}")
   @DeleteExecApiEndpoint
-  public ResponseEntity.HeadersBuilder<?> deleteScript(@PathVariable(name = "id") String scriptId) {
+  public ResponseEntity<?> deleteScript(@PathVariable(name = "id") String scriptId) {
     service.deleteExecution(scriptId);
-    return ResponseEntity.noContent();
+    return ResponseEntity.noContent().build();
   }
 
-  @GetMapping(
-        path = "/scripts/{id}/text",
-        produces = MediaType.TEXT_PLAIN_VALUE
-  )
+  @GetMapping("/scripts/{id}/text")
   @GetExecScriptApiEndpoint
   public ResponseEntity<String> getScriptText(@PathVariable(name = "id") String scriptId) {
-    return ResponseEntity.ok(service.getExecutionScript(scriptId));
+    return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(service.getExecutionScript(scriptId));
   }
 
-  @GetMapping(
-        path = "/scripts/{id}/output",
-        produces = MediaType.TEXT_PLAIN_VALUE
-  )
+  @GetMapping("/scripts/{id}/output")
   @GetExecOutputApiEndpoint
   public ResponseEntity<String> getScriptOutput(@PathVariable(name = "id") String scriptId) {
-    return ResponseEntity.ok(service.getExecutionOutput(scriptId));
+    return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(service.getExecutionOutput(scriptId));
   }
 
   private List<ScriptId> getScriptListResp(List<String> scriptList) {
@@ -178,12 +167,20 @@ public class ExecutorController {
     return scriptId;
   }
 
-  private void writeId(ScriptId idDto, OutputStream outputStream) throws IOException {
+  private void writeIdToStream(ScriptId idDto, OutputStream outputStream) throws IOException {
     JsonGenerator generator = new JsonFactory().createGenerator(outputStream);
-    jsonMapper.writeValue(generator, idDto);
+    generator.writeStartObject();
+    generator.writeStringField("id", idDto.getId());
+    generator.writeFieldName("_links");
+    generator.writeStartObject("_links");
+    generator.writeFieldName("self");
+    generator.writeStartObject("self");
+    generator.writeStringField("href", idDto.getRequiredLink("self").getHref());
+    generator.writeEndObject();
+    generator.writeEndObject();
+    generator.writeEndObject();
     generator.flush();
     outputStream.write('\n');
     outputStream.flush();
   }
-
 }
