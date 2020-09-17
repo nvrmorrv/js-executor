@@ -10,10 +10,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Aspect
 @Component
-public class RunningNumberAspect {
+public class RunningScriptsNumberAspect {
   AtomicInteger runningCount = new AtomicInteger(0);
 
-  public RunningNumberAspect(MeterRegistry registry) {
+  public RunningScriptsNumberAspect(MeterRegistry registry) {
     registry.gauge("running_scripts_number", runningCount);
   }
 
