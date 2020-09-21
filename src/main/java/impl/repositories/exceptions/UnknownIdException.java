@@ -1,4 +1,4 @@
-package impl.service.exceptions;
+package impl.repositories.exceptions;
 
 public class UnknownIdException extends RuntimeException {
 

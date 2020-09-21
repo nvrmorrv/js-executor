@@ -1,6 +1,7 @@
 package impl.service;
 
 import impl.aspects.annotations.Running;
+import impl.repositories.entities.ExecStatus;
 import impl.repositories.entities.Execution;
 import impl.service.exceptions.ExceptResException;
 import impl.service.exceptions.SyntaxErrorException;

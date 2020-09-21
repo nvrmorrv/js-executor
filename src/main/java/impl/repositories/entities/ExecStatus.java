@@ -1,4 +1,4 @@
-package impl.service;
+package impl.repositories.entities;
 
 public enum ExecStatus {
     CREATED,

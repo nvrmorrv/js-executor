@@ -1,12 +1,10 @@
 package impl.repositories;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import impl.repositories.entities.Execution;
-import impl.service.ExecStatus;
-import impl.service.exceptions.UnknownIdException;
+import impl.repositories.entities.ExecStatus;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 import java.util.Optional;
@@ -18,7 +16,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.Extensions;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -69,15 +66,17 @@ public class ExecRepositoryImpTest {
     Optional<Execution> exec = repo.getExecution(id);
     assertTrue(exec.isPresent());
     assertEquals(EXECUTION, exec.get());
-    repo.removeExecution(id);
+    Optional<Execution> res = repo.removeExecution(id);
     exec = repo.getExecution(id);
+    assertTrue(res.isPresent());
+    assertEquals(EXECUTION, res.get());
     assertTrue(exec.isEmpty());
   }
 
   @Test
   public void shouldFailOnRemovingExecByUnknownId() {
-    assertThatThrownBy(() -> repo.removeExecution("id"))
-          .isInstanceOf(UnknownIdException.class);
+    Optional<Execution> res = repo.removeExecution("id");
+    assertTrue(res.isEmpty());
   }
 
   @Test

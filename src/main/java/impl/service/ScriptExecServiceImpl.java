@@ -1,10 +1,11 @@
 package impl.service;
 
 import impl.repositories.ExecRepository;
+import impl.repositories.entities.ExecStatus;
 import impl.repositories.entities.Execution;
 import impl.service.dto.ExecInfo;
 import impl.service.exceptions.DeletionException;
-import impl.service.exceptions.UnknownIdException;
+import impl.repositories.exceptions.UnknownIdException;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -83,7 +84,7 @@ public class ScriptExecServiceImpl implements ScriptExecService {
     if(!exec.getComputation().isDone()) {
       throw new DeletionException(execId);
     }
-    repo.removeExecution(execId);
+    repo.removeExecution(execId).orElseThrow(() -> new UnknownIdException(execId));
   }
 
   public List<String> getExecutionIds() {

@@ -2,7 +2,7 @@ package impl.controllers;
 
 import impl.service.exceptions.DeletionException;
 import impl.service.exceptions.SyntaxErrorException;
-import impl.service.exceptions.UnknownIdException;
+import impl.repositories.exceptions.UnknownIdException;
 import io.swagger.v3.oas.annotations.Hidden;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

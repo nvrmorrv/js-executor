@@ -7,12 +7,13 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import impl.repositories.ExecRepository;
+import impl.repositories.entities.ExecStatus;
 import impl.repositories.entities.Execution;
 import impl.service.dto.ExecInfo;
 import impl.service.exceptions.DeletionException;
 import impl.service.exceptions.ExceptResException;
 import impl.service.exceptions.SyntaxErrorException;
-import impl.service.exceptions.UnknownIdException;
+import impl.repositories.exceptions.UnknownIdException;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.Optional;
@@ -47,7 +48,7 @@ public class ScriptExecServiceImplTest {
     service = new ScriptExecServiceImpl(repo, executor);
     execution = new Execution(
           SCRIPT,
-          new AtomicReference<>(impl.service.ExecStatus.QUEUE),
+          new AtomicReference<>(ExecStatus.QUEUE),
           new ByteArrayOutputStream(),
           new CompletableFuture<>(),
           new CompletableFuture<>()
@@ -145,14 +146,15 @@ public class ScriptExecServiceImplTest {
     execution.getComputation().complete(null);
     Mockito.when(repo.getExecution(SCRIPT_ID))
           .thenReturn(Optional.of(execution));
+    Mockito.when(repo.removeExecution(SCRIPT_ID))
+          .thenReturn(Optional.of(execution));
     assertThatCode(() -> service.deleteExecution(SCRIPT_ID))
           .doesNotThrowAnyException();
   }
 
   @Test
   public void shouldFailOnDeletionWithUnknownId() {
-    Mockito.when(repo.getExecution(SCRIPT_ID)).
-          thenThrow(new UnknownIdException(SCRIPT_ID));
+    Mockito.when(repo.getExecution(SCRIPT_ID)).thenReturn(Optional.empty());
     assertThatThrownBy(() -> service.deleteExecution("id"))
           .isInstanceOf(UnknownIdException.class)
           .hasMessage(UnknownIdException.generateMessage(SCRIPT_ID));

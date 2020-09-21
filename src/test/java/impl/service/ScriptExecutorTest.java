@@ -5,6 +5,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import impl.repositories.entities.ExecStatus;
 import impl.repositories.entities.Execution;
 import impl.service.exceptions.ExceptResException;
 import impl.service.exceptions.SyntaxErrorException;
@@ -73,7 +74,7 @@ public class ScriptExecutorTest {
   }
 
   private void executeAsync(String script) {
-    AtomicReference<impl.service.ExecStatus> status = new AtomicReference<>(impl.service.ExecStatus.QUEUE);
+    AtomicReference<ExecStatus> status = new AtomicReference<>(ExecStatus.QUEUE);
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     CompletableFuture<Runnable> ctCreation = new CompletableFuture<>();
     CompletableFuture<Void> comp = executor.executeAsync(script, status, ctCreation, outputStream);
@@ -81,7 +82,7 @@ public class ScriptExecutorTest {
   }
 
   private void executeBlocking(String script) {
-    AtomicReference<impl.service.ExecStatus> status = new AtomicReference<>(impl.service.ExecStatus.QUEUE);
+    AtomicReference<ExecStatus> status = new AtomicReference<>(ExecStatus.QUEUE);
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     CompletableFuture<Runnable> ctCreation = new CompletableFuture<>();
     CompletableFuture<Void> comp = new CompletableFuture<>();

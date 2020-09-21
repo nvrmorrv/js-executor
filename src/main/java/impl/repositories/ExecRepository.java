@@ -11,7 +11,7 @@ public interface ExecRepository {
 
   Optional<Execution> getExecution(String execId);
 
-  void removeExecution(String execId);
+  Optional<Execution> removeExecution(String execId);
 
   Set<String> getAllIds();
 }

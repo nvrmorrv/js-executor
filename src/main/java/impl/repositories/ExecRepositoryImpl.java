@@ -1,7 +1,6 @@
 package impl.repositories;
 
 import impl.repositories.entities.Execution;
-import impl.service.exceptions.UnknownIdException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -33,8 +32,8 @@ public class ExecRepositoryImpl implements ExecRepository {
   }
 
   @Override
-  public void removeExecution(String execId) {
-    Optional.ofNullable(map.remove(execId)).orElseThrow(() -> new UnknownIdException(execId));
+  public Optional<Execution> removeExecution(String execId) {
+    return Optional.ofNullable(map.remove(execId));
   }
 
   @Override

@@ -1,6 +1,5 @@
 package impl.repositories.entities;
 
-import impl.service.ExecStatus;
 import java.io.OutputStream;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
