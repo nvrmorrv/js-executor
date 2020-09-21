@@ -6,7 +6,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import impl.repositories.ExecRepository;
+import impl.repositories.ScriptRepository;
 import impl.repositories.entities.ExecStatus;
 import impl.repositories.entities.Execution;
 import impl.service.dto.ExecInfo;
@@ -41,7 +41,7 @@ public class ScriptExecServiceImplTest {
   public ScriptExecutor executor;
 
   @Mock
-  public ExecRepository repo;
+  public ScriptRepository repo;
 
   @BeforeEach
   public void setup() {
@@ -67,7 +67,7 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldPassOnAsyncExec() {
-    Mockito.when(repo.addExecution(Mockito.any())).thenReturn(SCRIPT_ID);
+    Mockito.when(repo.addScript(Mockito.any())).thenReturn(SCRIPT_ID);
     assertEquals(SCRIPT_ID, service.executeScriptAsync(SCRIPT));
   }
 
@@ -82,7 +82,7 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldPassOnCreatingExec() {
-    Mockito.when(repo.addExecution(Mockito.any())).thenReturn(SCRIPT_ID);
+    Mockito.when(repo.addScript(Mockito.any())).thenReturn(SCRIPT_ID);
     service.createExec(SCRIPT, stream);
     assertEquals(SCRIPT_ID, service.createExec(SCRIPT, stream));
   }
@@ -99,14 +99,14 @@ public class ScriptExecServiceImplTest {
   @Test
   public void shouldPassOnBlockingExec() {
     execution.getStatus().set(ExecStatus.CREATED);
-    Mockito.when(repo.getExecution(SCRIPT_ID)).thenReturn(Optional.of(execution));
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(execution));
     assertThatCode(() -> service.executeScript(SCRIPT_ID))
           .doesNotThrowAnyException();
   }
 
   @Test
   public void shouldFailOnBlockingExecWithNotCreatedStatus() {
-    Mockito.when(repo.getExecution(SCRIPT_ID)).thenReturn(Optional.of(execution));
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(execution));
     assertThatThrownBy(() -> service.executeScript(SCRIPT_ID))
           .isInstanceOf(IllegalArgumentException.class);
   }
@@ -115,7 +115,7 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldPassOnCancellation() {
-    Mockito.when(repo.getExecution(SCRIPT_ID))
+    Mockito.when(repo.getScript(SCRIPT_ID))
           .thenReturn(Optional.of(execution));
     assertThatCode(() -> service.cancelExecution(SCRIPT_ID))
           .doesNotThrowAnyException();
@@ -123,7 +123,7 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldFailOnCancellationWithUnknownId() {
-    Mockito.when(repo.getExecution(SCRIPT_ID)).
+    Mockito.when(repo.getScript(SCRIPT_ID)).
           thenThrow(new UnknownIdException(SCRIPT_ID));
     assertThatThrownBy(() -> service.getExecutionStatus(SCRIPT_ID))
           .isInstanceOf(UnknownIdException.class)
@@ -134,7 +134,7 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldFailOnDeletionOfNotCancelledExec() {
-    Mockito.when(repo.getExecution(SCRIPT_ID))
+    Mockito.when(repo.getScript(SCRIPT_ID))
           .thenReturn(Optional.of(execution));
     assertThatThrownBy(() -> service.deleteExecution(SCRIPT_ID))
           .isInstanceOf(DeletionException.class)
@@ -144,9 +144,9 @@ public class ScriptExecServiceImplTest {
   @Test
   public void shouldPassOnDeletionOfFinishedExec() {
     execution.getComputation().complete(null);
-    Mockito.when(repo.getExecution(SCRIPT_ID))
+    Mockito.when(repo.getScript(SCRIPT_ID))
           .thenReturn(Optional.of(execution));
-    Mockito.when(repo.removeExecution(SCRIPT_ID))
+    Mockito.when(repo.removeScript(SCRIPT_ID))
           .thenReturn(Optional.of(execution));
     assertThatCode(() -> service.deleteExecution(SCRIPT_ID))
           .doesNotThrowAnyException();
@@ -154,7 +154,7 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldFailOnDeletionWithUnknownId() {
-    Mockito.when(repo.getExecution(SCRIPT_ID)).thenReturn(Optional.empty());
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.empty());
     assertThatThrownBy(() -> service.deleteExecution("id"))
           .isInstanceOf(UnknownIdException.class)
           .hasMessage(UnknownIdException.generateMessage(SCRIPT_ID));
@@ -164,7 +164,7 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldPassOnGettingStatus() {
-    Mockito.when(repo.getExecution(SCRIPT_ID)).thenReturn(Optional.of(execution));
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(execution));
     execution.getComputation().complete(null);
     execution.getStatus().set(ExecStatus.DONE);
     ExecInfo status = service.getExecutionStatus(SCRIPT_ID);
@@ -174,7 +174,7 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldPassOnGettingExceptionStatus() {
-    Mockito.when(repo.getExecution(SCRIPT_ID)).thenReturn(Optional.of(execution));
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(execution));
     execution.getComputation().completeExceptionally(EXCEPTION_RES_EXCEPTION);
     ExecInfo status = service.getExecutionStatus(SCRIPT_ID);
     assertTrue(status.getMessage().isPresent());
@@ -183,7 +183,7 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldFailOnGettingStatusWithUnknownId() {
-    Mockito.when(repo.getExecution(SCRIPT_ID)).
+    Mockito.when(repo.getScript(SCRIPT_ID)).
           thenThrow(new UnknownIdException(SCRIPT_ID));
     assertThatThrownBy(() -> service.getExecutionStatus(SCRIPT_ID))
           .isInstanceOf(UnknownIdException.class)
@@ -194,14 +194,14 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldPassOnGettingOutput() {
-    Mockito.when(repo.getExecution(SCRIPT_ID)).thenReturn(Optional.of(execution));
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(execution));
     String output = service.getExecutionOutput(SCRIPT_ID);
     assertEquals(getOutput(execution), output);
   }
 
   @Test
   public void shouldFailOnGettingOutputWithUnknownId() {
-    Mockito.when(repo.getExecution(SCRIPT_ID)).
+    Mockito.when(repo.getScript(SCRIPT_ID)).
           thenThrow(new UnknownIdException(SCRIPT_ID));
     assertThatThrownBy(() -> service.getExecutionOutput(SCRIPT_ID))
           .isInstanceOf(UnknownIdException.class)
@@ -212,14 +212,14 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldPassOnGettingScript() {
-    Mockito.when(repo.getExecution(SCRIPT_ID)).thenReturn(Optional.of(execution));
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(execution));
     String script = service.getExecutionScript(SCRIPT_ID);
     assertEquals(execution.getScript(), script);
   }
 
   @Test
   public void shouldFailOnGettingScriptWithUnknownId() {
-    Mockito.when(repo.getExecution(SCRIPT_ID)).
+    Mockito.when(repo.getScript(SCRIPT_ID)).
           thenThrow(new UnknownIdException(SCRIPT_ID));
     assertThatThrownBy(() -> service.getExecutionScript(SCRIPT_ID))
           .isInstanceOf(UnknownIdException.class)

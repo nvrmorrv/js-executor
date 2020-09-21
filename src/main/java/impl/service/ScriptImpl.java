@@ -5,7 +5,11 @@ import impl.repositories.entities.ExecStatus;
 import impl.repositories.entities.Script;
 import impl.service.exceptions.SyntaxErrorException;
 import io.micrometer.core.annotation.Timed;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import lombok.Getter;
+import lombok.SneakyThrows;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.springframework.scheduling.annotation.Async;
@@ -19,30 +23,32 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class JsScript implements Script {
-  private final String LANG = "js";
+public class ScriptImpl implements Script {
+  private final String lang;
   @Getter private final String id;
   @Getter private final String script;
   private final ByteArrayOutputStream outputStream;
   private final ByteArrayOutputStream errStream = new ByteArrayOutputStream();
   private final ReadWriteLock lock = new ReentrantReadWriteLock();
-  private final Context context = createContext();
   @Getter private final Instant scheduledTime = Instant.now();
   @Getter private Instant startTime;
   @Getter private Instant endTime;
   @Getter private ExecStatus status = ExecStatus.QUEUE;
   private String exMessage;
   private List<String> stackTrace;
+  private final CompletableFuture<Runnable> ctCreation = new CompletableFuture<>();
 
-  public JsScript(String id, String script) {
+  public ScriptImpl(String lang, String id, String script) {
     checkScript(script);
+    this.lang = lang;
     this.id = id;
     this.script = script;
     this.outputStream = new ByteArrayOutputStream();
   }
 
-  public JsScript(String id, String script, OutputStream stream) {
+  public ScriptImpl(String lang, String id, String script, OutputStream stream) {
     checkScript(script);
+    this.lang = lang;
     this.id = id;
     this.script = script;
     this.outputStream = new OutputStreamWrapper(stream);
@@ -77,18 +83,20 @@ public class JsScript implements Script {
   @Timed(value = "running_time")
   @Override
   public void execute() {
-    start();
-    try (Context context = this.context) {
-      context.eval(LANG, script);
-      end(ExecStatus.DONE);
+    setStart();
+    try (Context context = createContext()) {
+      checkCancelAndComplete(context);
+      context.eval(lang, script);
+      setEnd(ExecStatus.DONE);
     } catch (PolyglotException ex) {
       if (ex.isCancelled()) {
-        end(ExecStatus.CANCELLED);
+        setEnd(ExecStatus.CANCELLED);
       } else {
-   //     endWithException(ex.getMessage(), ex.getStackTrace());
+        setEndWithException(ex.getMessage(),
+              getGuestStackTrace(ex.getPolyglotStackTrace()));
       }
     } catch (IllegalStateException ex) {
-      end(ExecStatus.CANCELLED);
+      setEnd(ExecStatus.CANCELLED);
     }
   }
 
@@ -98,26 +106,43 @@ public class JsScript implements Script {
     execute();
   }
 
-  @Override
+  @SneakyThrows
   public void cancel() {
-    context.close(true);
+    synchronized (ctCreation) {
+      if(!ctCreation.isCancelled()) {
+        if (ctCreation.isDone()) {
+          ctCreation.get().run();
+        }
+        ctCreation.cancel(true);
+      }
+    }
   }
 
-  private void start() {
+  private void checkCancelAndComplete(Context context) {
+    synchronized (ctCreation) {
+      if(ctCreation.isCancelled()){
+        throw new IllegalStateException();
+      } else {
+        ctCreation.complete(() -> context.close(true));
+      }
+    }
+  }
+
+  private void setStart() {
     lock.writeLock().lock();
     status = ExecStatus.RUNNING;
     startTime = Instant.now();
     lock.writeLock().unlock();
   }
 
-  private void end(ExecStatus eStatus) {
+  private void setEnd(ExecStatus eStatus) {
     lock.writeLock().lock();
     status = eStatus;
     endTime = Instant.now();
     lock.writeLock().unlock();
   }
 
-  private void endWithException(String message, List<String> sTrace) {
+  private void setEndWithException(String message, List<String> sTrace) {
     lock.writeLock().lock();
     status = ExecStatus.DONE_WITH_EXCEPTION;
     endTime = Instant.now();
@@ -127,8 +152,8 @@ public class JsScript implements Script {
   }
 
   private void checkScript(String script) {
-    try(Context context = createCheckContext()) {
-      context.parse(LANG, script);
+    try(Context context = Context.newBuilder(lang).build()) {
+      context.parse(lang, script);
     } catch (PolyglotException ex) {
       throw new SyntaxErrorException(ex.getMessage(),
             ex.getSourceLocation().getCharacters().toString());
@@ -136,13 +161,16 @@ public class JsScript implements Script {
   }
 
   private Context createContext() {
-    return  Context.newBuilder(LANG)
+    return  Context.newBuilder(lang)
           .out(outputStream)
           .err(errStream)
           .build();
   }
 
-  private Context createCheckContext() {
-    return Context.newBuilder(LANG).build();
+  private List<String> getGuestStackTrace(Iterable<PolyglotException.StackFrame> frames) {
+    return StreamSupport.stream(frames.spliterator(), false)
+          .filter(PolyglotException.StackFrame::isGuestFrame)
+          .map(PolyglotException.StackFrame::toString)
+          .collect(Collectors.toList());
   }
 }

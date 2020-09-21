@@ -21,8 +21,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class ExecRepositoryImpTest {
-  private ExecRepositoryImpl repo;
+public class ScriptRepositoryImpTest {
+  private ScriptRepositoryImpl repo;
   private final Execution EXECUTION = new Execution(
         "script",
         new AtomicReference<>(ExecStatus.QUEUE),
@@ -36,52 +36,52 @@ public class ExecRepositoryImpTest {
 
   @BeforeEach
   public void setup() {
-    repo = new ExecRepositoryImpl(registry);
+    repo = new ScriptRepositoryImpl(registry);
   }
 
   @Test
   public void shouldPassOnAddingExec() {
-    String id = repo.addExecution(EXECUTION);
-    Execution exec = repo.getExecution(id);
+    String id = repo.addScript(EXECUTION);
+    Execution exec = repo.getScript(id);
     assertEquals(EXECUTION, exec);
   }
 
   @Test
   public void shouldPassOnGettingExec() {
-    String id = repo.addExecution(EXECUTION);
-    Execution exec = repo.getExecution(id);
+    String id = repo.addScript(EXECUTION);
+    Execution exec = repo.getScript(id);
     assertEquals(EXECUTION, exec);
   }
 
   @Test
   public void shouldFailOnGettingExecByUnknownId() {
-    assertThatThrownBy(() -> repo.getExecution("id"))
+    assertThatThrownBy(() -> repo.getScript("id"))
           .isInstanceOf(UnknownIdException.class)
           .hasMessage(UnknownIdException.generateMessage("id"));
   }
 
   @Test
   public void shouldPassOnRemovingExec() {
-    String id = repo.addExecution(EXECUTION);
-    Execution exec = repo.getExecution(id);
+    String id = repo.addScript(EXECUTION);
+    Execution exec = repo.getScript(id);
     assertEquals(EXECUTION, exec);
-    repo.removeExecution(id);
-    assertThatThrownBy(() -> repo.getExecution(id))
+    repo.removeScript(id);
+    assertThatThrownBy(() -> repo.getScript(id))
           .isInstanceOf(UnknownIdException.class)
           .hasMessage(UnknownIdException.generateMessage(id));
   }
 
   @Test
   public void shouldFailOnRemovingExecByUnknownId() {
-    assertThatThrownBy(() -> repo.getExecution("id"))
+    assertThatThrownBy(() -> repo.getScript("id"))
           .isInstanceOf(UnknownIdException.class)
           .hasMessage(UnknownIdException.generateMessage("id"));
   }
 
   @Test
   public void shouldPassOnGettingAllExecIds() {
-    String id = repo.addExecution(EXECUTION);
-    String id1 = repo.addExecution(EXECUTION);
+    String id = repo.addScript(EXECUTION);
+    String id1 = repo.addScript(EXECUTION);
     Set<String> ids = repo.getAllIds();
     assertEquals(2, ids.size());
     assertTrue(ids.containsAll(Arrays.asList(id, id1)));
