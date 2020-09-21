@@ -38,7 +38,7 @@ public class ScriptExecServiceImpl implements ScriptExecService {
 
   @SneakyThrows
   public void executeScript(String id) {
-    Execution exec = getExecOrThrow(id);
+    Execution exec = repo.getExecution(id);
     if(exec.getStatus().get() != ExecStatus.CREATED) {
       throw new IllegalArgumentException("This method for scripts with CREATED status only");
     }
@@ -53,7 +53,7 @@ public class ScriptExecServiceImpl implements ScriptExecService {
 
   @SneakyThrows
   public ExecInfo getExecutionStatus(String execId) {
-    Execution exec = getExecOrThrow(execId);
+    Execution exec = repo.getExecution(execId);
     if(exec.getComputation().isDone()) {
       try {
         exec.getComputation().get();
@@ -66,25 +66,25 @@ public class ScriptExecServiceImpl implements ScriptExecService {
   }
 
   public String getExecutionScript(String id) {
-    return getExecOrThrow(id).getScript();
+    return repo.getExecution(id).getScript();
   }
 
   public String getExecutionOutput(String id) {
-    return getOutput(getExecOrThrow(id).getOutputStream());
+    return getOutput(repo.getExecution(id).getOutputStream());
   }
 
   @SneakyThrows
   public void cancelExecution(String execId) {
-    Execution exec = getExecOrThrow(execId);
+    Execution exec = repo.getExecution(execId);
     executor.cancelExec(exec);
   }
 
   public void deleteExecution(String execId) {
-    Execution exec = getExecOrThrow(execId);
+    Execution exec = repo.getExecution(execId);
     if(!exec.getComputation().isDone()) {
       throw new DeletionException(execId);
     }
-    repo.removeExecution(execId).orElseThrow(() -> new UnknownIdException(execId));
+    repo.removeExecution(execId);
   }
 
   public List<String> getExecutionIds() {
@@ -107,10 +107,6 @@ public class ScriptExecServiceImpl implements ScriptExecService {
     CompletableFuture<Runnable> ctCreation = new CompletableFuture<>();
     CompletableFuture<Void> comp = new CompletableFuture<>();
     return new Execution(script, status, streamWrapper, comp, ctCreation);
-  }
-
-  private Execution getExecOrThrow(String execId) {
-    return repo.getExecution(execId).orElseThrow(() -> new UnknownIdException(execId));
   }
 
   private String getOutput(OutputStream stream) {

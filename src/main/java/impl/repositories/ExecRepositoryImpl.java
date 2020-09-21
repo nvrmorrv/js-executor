@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import impl.repositories.exceptions.UnknownIdException;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import org.springframework.stereotype.Component;
@@ -27,13 +28,13 @@ public class ExecRepositoryImpl implements ExecRepository {
   }
 
   @Override
-  public Optional<Execution> getExecution(String execId) {
-    return Optional.ofNullable(map.get(execId));
+  public Execution getExecution(String execId) {
+    return Optional.ofNullable(map.get(execId)).orElseThrow(() -> new UnknownIdException(execId));
   }
 
   @Override
-  public Optional<Execution> removeExecution(String execId) {
-    return Optional.ofNullable(map.remove(execId));
+  public void removeExecution(String execId) {
+    Optional.ofNullable(map.remove(execId)).orElseThrow(() -> new UnknownIdException(execId));
   }
 
   @Override

@@ -1,5 +1,6 @@
 package impl.repositories;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -7,11 +8,11 @@ import impl.repositories.entities.Execution;
 import impl.repositories.entities.ExecStatus;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
+import impl.repositories.exceptions.UnknownIdException;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,42 +42,40 @@ public class ExecRepositoryImpTest {
   @Test
   public void shouldPassOnAddingExec() {
     String id = repo.addExecution(EXECUTION);
-    Optional<Execution> exec = repo.getExecution(id);
-    assertTrue(exec.isPresent());
-    assertEquals(EXECUTION, exec.get());
+    Execution exec = repo.getExecution(id);
+    assertEquals(EXECUTION, exec);
   }
 
   @Test
   public void shouldPassOnGettingExec() {
     String id = repo.addExecution(EXECUTION);
-    Optional<Execution> exec = repo.getExecution(id);
-    assertTrue(exec.isPresent());
-    assertEquals(EXECUTION, exec.get());
+    Execution exec = repo.getExecution(id);
+    assertEquals(EXECUTION, exec);
   }
 
   @Test
   public void shouldFailOnGettingExecByUnknownId() {
-    Optional<Execution> exec = repo.getExecution("id");
-    assertTrue(exec.isEmpty());
+    assertThatThrownBy(() -> repo.getExecution("id"))
+          .isInstanceOf(UnknownIdException.class)
+          .hasMessage(UnknownIdException.generateMessage("id"));
   }
 
   @Test
   public void shouldPassOnRemovingExec() {
     String id = repo.addExecution(EXECUTION);
-    Optional<Execution> exec = repo.getExecution(id);
-    assertTrue(exec.isPresent());
-    assertEquals(EXECUTION, exec.get());
-    Optional<Execution> res = repo.removeExecution(id);
-    exec = repo.getExecution(id);
-    assertTrue(res.isPresent());
-    assertEquals(EXECUTION, res.get());
-    assertTrue(exec.isEmpty());
+    Execution exec = repo.getExecution(id);
+    assertEquals(EXECUTION, exec);
+    repo.removeExecution(id);
+    assertThatThrownBy(() -> repo.getExecution(id))
+          .isInstanceOf(UnknownIdException.class)
+          .hasMessage(UnknownIdException.generateMessage(id));
   }
 
   @Test
   public void shouldFailOnRemovingExecByUnknownId() {
-    Optional<Execution> res = repo.removeExecution("id");
-    assertTrue(res.isEmpty());
+    assertThatThrownBy(() -> repo.getExecution("id"))
+          .isInstanceOf(UnknownIdException.class)
+          .hasMessage(UnknownIdException.generateMessage("id"));
   }
 
   @Test
