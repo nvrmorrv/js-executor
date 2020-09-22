@@ -1,5 +1,6 @@
 package impl.controllers;
 
+import impl.controllers.exceptions.CancellationException;
 import impl.service.exceptions.DeletionException;
 import impl.service.exceptions.SyntaxErrorException;
 import impl.repositories.exceptions.UnknownIdException;
@@ -28,6 +29,16 @@ public class ExecutorControllerAdvise {
      .withDetail(ex.getMessage())
      .with("section", ex.getSection())
      .build();
+  }
+
+  @ExceptionHandler(CancellationException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public Problem response(CancellationException ex) {
+    return Problem.builder()
+          .withTitle("Passed status not allowed")
+          .withStatus(Status.BAD_REQUEST)
+          .withDetail(ex.getMessage())
+          .build();
   }
 
 

@@ -1,27 +1,32 @@
 package impl.service;
 
-import impl.service.dto.ExecInfo;
+import impl.service.dto.ScriptInfo;
 
 import java.io.OutputStream;
 import java.util.List;
+import java.util.TimeZone;
 
 public interface ScriptExecService {
 
-  String executeScriptAsync(String script);
+  boolean createScript(String id, byte[] scriptText, TimeZone timeZone);
 
-  String createExec(String script, OutputStream stream);
+  void executeScriptAsync(String id);
 
-  void executeScript(String id);
+  void executeScript(String id, OutputStream respStream);
 
-  ExecInfo getExecutionStatus(String execId);
+  ScriptInfo getScriptInfo(String id);
 
-  String getExecutionScript(String execId);
+  byte[] getScriptText(String id);
 
-  String getExecutionOutput(String execId);
+  byte[] getScriptOutput(String id);
 
-  void cancelExecution(String execId);
+  byte[] getScriptErrOutput(String id);
 
-  void deleteExecution(String execId);
+  void cancelScriptExecution(String execId);
 
-  List<String> getExecutionIds();
+  void deleteScript(String execId);
+
+  List<ScriptInfo> getScripts();
+
+  boolean isExist(String id);
 }

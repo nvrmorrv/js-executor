@@ -2,16 +2,15 @@ package impl.service;
 
 import impl.repositories.ScriptRepository;
 import impl.repositories.entities.ExecStatus;
-import impl.repositories.entities.Execution;
 import impl.repositories.entities.Script;
-import impl.service.dto.ExecInfo;
+import impl.service.dto.*;
 import impl.service.exceptions.DeletionException;
+
 import java.io.OutputStream;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.locks.Lock;
+import java.util.TimeZone;
+import java.util.stream.Collectors;
+
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,7 +18,7 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-public class ScriptExecServiceImpl {
+public class ScriptExecServiceImpl implements ScriptExecService{
   private final String lang;
   private final ScriptRepository repo;
 
@@ -28,61 +27,93 @@ public class ScriptExecServiceImpl {
     this.repo = repo;
   }
 
-  public void executeScriptAsync(String id, String scriptText) {
-    Script script = new ScriptImpl(lang, id, scriptText);
-    repo.addScript(id, script);
-    script.executeAsync();
+  @Override
+  public synchronized boolean createScript(String id, byte[] scriptText, TimeZone timeZone) {
+    checkScriptForCompleteness(id);
+    Script script = new ScriptImpl(lang, id, scriptText, timeZone);
+    return repo.addOrUpdateScript(id, script);
   }
 
-  public void executeScript(String id, String scriptText, OutputStream respStream) {
-    Script script = new ScriptImpl(lang, id, scriptText, respStream);
-    repo.addScript(id, script);
-    script.execute();
+  @Override
+  public void executeScript(String id, OutputStream outputStream) {
+    repo.getScript(id).execute(outputStream);
   }
 
+  @Override
+  public void executeScriptAsync(String id) {
+    repo.getScript(id).executeAsync();
+  }
+
+  @Override
   @SneakyThrows
-  public ExecInfo getExecutionStatus(String execId) {
-    Script script = repo.getScript(execId);
-    Lock readLock = script.getReadLock();
-    readLock.lock();
-    ExecInfo info = getStatus(script);
-    readLock.unlock();
-    return info;
+  public ScriptInfo getScriptInfo(String id) {
+    Script script = repo.getScript(id);
+    return getScriptInfo(script);
   }
 
-  public String getExecutionScript(String id) {
+  @Override
+  public byte[] getScriptText(String id) {
     return repo.getScript(id).getScript();
   }
 
-  public String getExecutionOutput(String id) {
-    return getOutput(repo.getScript(id).getOutputStream());
+  @Override
+  public byte[] getScriptOutput(String id) {
+    return repo.getScript(id).getOutput();
   }
 
+  @Override
+  public byte[] getScriptErrOutput(String id) {
+    return repo.getScript(id).getErrOutput();
+  }
+
+  @Override
   @SneakyThrows
-  public void cancelExecution(String execId) {
-    Execution exec = repo.getScript(execId);
-    executor.cancelExec(exec);
+  public void cancelScriptExecution(String id) {
+    repo.getScript(id).cancel();
   }
 
-  public void deleteExecution(String execId) {
-    Execution exec = repo.getScript(execId);
-    if(!exec.getComputation().isDone()) {
+  @Override
+  public void deleteScript(String execId) {
+    if(isNotFinished(repo.getScript(execId).getStatus())) {
       throw new DeletionException(execId);
     }
     repo.removeScript(execId);
   }
 
-  public List<String> getExecutionIds() {
-    return new ArrayList<>(repo.getAllIds());
+
+  @Override
+  public List<ScriptInfo> getScripts() {
+    return repo.getScripts().stream()
+          .map(this::getScriptInfo)
+          .collect(Collectors.toList());
   }
 
-  private String getOutput(OutputStream stream) {
-    return stream.toString();
+  @Override
+  public boolean isExist(String id) {
+    return repo.contains(id);
   }
 
-  private ExecInfo getExecInfo(Script script) {
-    if(script.getStatus() == ExecStatus.QUEUE) {
-      return new ExecInfo(script.getId(), script.getStatus().name(), script.)
+  private ScriptInfo getScriptInfo(Script script) {
+    script.getReadLock().lock();
+    ScriptInfo info = new ScriptInfo(
+          script.getId(),
+          script.getStatus().name(),
+          script.getScheduledTime(),
+          script.getStartTime(),
+          script.getFinishTime(),
+          script.getExMessage(),
+          script.getStackTrace());
+    script.getReadLock().unlock();
+    return info;
+  }
+
+  private void checkScriptForCompleteness(String id) {
+    if(repo.contains(id) && isNotFinished(repo.getScript(id).getStatus())) {
+      throw new DeletionException(id);
     }
+  }
+
+  private boolean isNotFinished(ExecStatus status) {
+    return !ExecStatus.FINISHED.contains(status);
   }
 }

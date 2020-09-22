@@ -9,7 +9,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import impl.repositories.ScriptRepository;
 import impl.repositories.entities.ExecStatus;
 import impl.repositories.entities.Execution;
-import impl.service.dto.ExecInfo;
 import impl.service.exceptions.DeletionException;
 import impl.service.exceptions.ExceptResException;
 import impl.service.exceptions.SyntaxErrorException;
@@ -167,7 +166,7 @@ public class ScriptExecServiceImplTest {
     Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(execution));
     execution.getComputation().complete(null);
     execution.getStatus().set(ExecStatus.DONE);
-    ExecInfo status = service.getExecutionStatus(SCRIPT_ID);
+    QueueScriptInfo status = service.getExecutionStatus(SCRIPT_ID);
     assertFalse(status.getMessage().isPresent());
     assertEquals(getStatus(execution), status.getStatus());
   }
@@ -176,7 +175,7 @@ public class ScriptExecServiceImplTest {
   public void shouldPassOnGettingExceptionStatus() {
     Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(execution));
     execution.getComputation().completeExceptionally(EXCEPTION_RES_EXCEPTION);
-    ExecInfo status = service.getExecutionStatus(SCRIPT_ID);
+    QueueScriptInfo status = service.getExecutionStatus(SCRIPT_ID);
     assertTrue(status.getMessage().isPresent());
     assertEquals(ExecStatus.DONE_WITH_EXCEPTION.name(), status.getStatus());
   }

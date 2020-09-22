@@ -14,7 +14,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import impl.repositories.entities.ExecStatus;
 import impl.service.ScriptExecService;
-import impl.service.dto.ExecInfo;
 import impl.service.exceptions.DeletionException;
 import impl.service.exceptions.SyntaxErrorException;
 import impl.repositories.exceptions.UnknownIdException;
@@ -40,10 +39,10 @@ import org.springframework.test.web.servlet.MvcResult;
 public class ExecutorControllerTest {
   private final String EXEC_ID = "id";
   private final String SCRIPT = "console.log('hello')";
-  private final ExecInfo RESULT =
-        new ExecInfo(ExecStatus.DONE.name(), Optional.empty());
-  private final ExecInfo EX_RESULT =
-        new ExecInfo(ExecStatus.DONE_WITH_EXCEPTION.name(), Optional.of(""));
+  private final QueueScriptInfo RESULT =
+        new QueueScriptInfo(ExecStatus.DONE.name(), Optional.empty());
+  private final QueueScriptInfo EX_RESULT =
+        new QueueScriptInfo(ExecStatus.DONE_WITH_EXCEPTION.name(), Optional.of(""));
   private final SyntaxErrorException SYN_ERR_EXCEPTION = new SyntaxErrorException("syntax error", "here");
 
   @Autowired

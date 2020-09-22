@@ -7,11 +7,22 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableAsync;
 
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.TimeZone;
+
 @SpringBootApplication
 @EnableAsync
 public class App {
   public static void main(String[] args) {
-   SpringApplication.run(App.class, args);
+    SpringApplication.run(App.class, args);
+    //test1();
+  }
+
+  private static void test1() {
+    ZonedDateTime time = ZonedDateTime.now();
+    String str = time.format(DateTimeFormatter.ofPattern("dd-MM-uuuu;HH:mm:ss"));
+    System.out.println(str);
   }
 }
 

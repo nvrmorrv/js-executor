@@ -5,11 +5,13 @@ import java.util.List;
 
 public interface ScriptRepository {
 
-  String addScript(String id, Script script);
+  boolean addOrUpdateScript(String id, Script script);
 
   Script getScript(String scriptId);
 
   void removeScript(String scriptId);
 
   List<Script> getScripts();
+
+  boolean contains(String scriptId);
 }

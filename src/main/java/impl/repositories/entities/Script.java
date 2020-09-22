@@ -1,5 +1,7 @@
 package impl.repositories.entities;
 
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.locks.Lock;
@@ -8,21 +10,27 @@ public interface Script {
 
   String getId();
 
-  String getScript();
+  byte[] getScript();
 
   ExecStatus getStatus();
+
+  String getScheduledTime();
+
+  String getStartTime();
+
+  String getFinishTime();
 
   byte[] getOutput();
 
   byte[] getErrOutput();
 
-  Optional<String> getExMessage();
+  String getExMessage();
 
-  Optional<List<String>> getStackTrace();
+  List<String> getStackTrace();
 
   Lock getReadLock();
 
-  void execute();
+  void execute(OutputStream outputStream);
 
   void executeAsync();
 

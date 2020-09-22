@@ -21,9 +21,8 @@ public class ScriptRepositoryImpl implements ScriptRepository {
   }
 
   @Override
-  public String addScript(String id, Script script) {
-    map.put(id, script);
-    return id;
+  public boolean addOrUpdateScript(String id, Script script) {
+    return map.put(id, script) == null;
   }
 
   @Override
@@ -39,5 +38,10 @@ public class ScriptRepositoryImpl implements ScriptRepository {
   @Override
   public List<Script> getScripts() {
     return new ArrayList<>(map.values());
+  }
+
+  @Override
+  public boolean contains(String scriptId) {
+    return map.containsKey(scriptId);
   }
 }
