@@ -16,17 +16,13 @@ public interface ScriptExecService {
 
   ScriptInfo getScriptInfo(String id);
 
-  byte[] getScriptText(String id);
+  byte[] getScriptSource(String id);
 
   byte[] getScriptOutput(String id);
-
-  byte[] getScriptErrOutput(String id);
 
   void cancelScriptExecution(String execId);
 
   void deleteScript(String execId);
 
   List<ScriptInfo> getScripts();
-
-  boolean isExist(String id);
 }

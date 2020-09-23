@@ -1,4 +1,4 @@
-package impl.repositories.entities;
+package impl.shared;
 
 import java.util.Set;
 

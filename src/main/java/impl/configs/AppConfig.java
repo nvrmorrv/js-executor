@@ -27,21 +27,7 @@ public class AppConfig {
         interceptor.addCacheMapping(CacheControl.noStore().noTransform(), "/*");
         registry.addInterceptor(interceptor);
       }
-
-      @Override
-      public void configureAsyncSupport(AsyncSupportConfigurer configurer) {
-        configurer.setTaskExecutor(concurrentTaskExecutor());
-      }
     };
-  }
-
-  @Bean
-  public ConcurrentTaskExecutor concurrentTaskExecutor() {
-    ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-    executor.setCorePoolSize(8);
-    executor.setMaxPoolSize(8);
-    executor.setQueueCapacity(200);
-    return new ConcurrentTaskExecutor(executor);
   }
 
   @Bean

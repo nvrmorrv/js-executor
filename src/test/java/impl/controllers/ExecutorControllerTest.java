@@ -12,7 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import impl.repositories.entities.ExecStatus;
+import impl.shared.ExecStatus;
 import impl.service.ScriptExecService;
 import impl.service.exceptions.DeletionException;
 import impl.service.exceptions.SyntaxErrorException;

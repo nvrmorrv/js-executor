@@ -5,8 +5,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import impl.repositories.entities.ExecStatus;
-import impl.repositories.entities.Execution;
+import impl.shared.ExecStatus;
+import impl.repositories.entities.Script;
 import impl.service.exceptions.ExceptResException;
 import impl.service.exceptions.SyntaxErrorException;
 import java.io.ByteArrayOutputStream;
@@ -39,7 +39,7 @@ public class ScriptExecutorTest {
   private final String SCRIPT_WITH_SYNTAX_ERROR = "#@#$.l()";
   private final String SCRIPT_WITH_EXCEPTION = "throw 'error'";
   private final String FINITE_SCRIPT_RESULT = "hello\n";
-  private Execution execution;
+  private Script script;
 
   @Autowired
   ScriptExecutor executor;
@@ -61,15 +61,15 @@ public class ScriptExecutorTest {
 
 
   @SneakyThrows
-  private void await(Execution execution) {
-    executor.awaitTermination(execution, 1, TimeUnit.MINUTES);
+  private void await(Script script) {
+    executor.awaitTermination(script, 1, TimeUnit.MINUTES);
   }
 
-  private String getStatus(Execution exec) {
+  private String getStatus(Script exec) {
     return exec.getStatus().get().name();
   }
 
-  private String getOutput(Execution exec) {
+  private String getOutput(Script exec) {
     return exec.getOutputStream().toString();
   }
 
@@ -78,7 +78,7 @@ public class ScriptExecutorTest {
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     CompletableFuture<Runnable> ctCreation = new CompletableFuture<>();
     CompletableFuture<Void> comp = executor.executeAsync(script, status, ctCreation, outputStream);
-    execution = new Execution(script, status, outputStream, comp, ctCreation);
+    this.script = new Script(script, status, outputStream, comp, ctCreation);
   }
 
   private void executeBlocking(String script) {
@@ -86,7 +86,7 @@ public class ScriptExecutorTest {
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     CompletableFuture<Runnable> ctCreation = new CompletableFuture<>();
     CompletableFuture<Void> comp = new CompletableFuture<>();
-    execution = new Execution(script, status, outputStream, comp, ctCreation);
+    this.script = new Script(script, status, outputStream, comp, ctCreation);
     executor.execute(script, status, ctCreation, comp, outputStream);
   }
 
@@ -95,15 +95,15 @@ public class ScriptExecutorTest {
   @Test
   public void shouldPassOnAsyncExec() {
     executeAsync(FINITE_SCRIPT);
-    await(execution);
-    assertEquals(ExecStatus.DONE.name(), getStatus(execution));
-    assertEquals(FINITE_SCRIPT_RESULT, getOutput(execution));
+    await(script);
+    assertEquals(ExecStatus.DONE.name(), getStatus(script));
+    assertEquals(FINITE_SCRIPT_RESULT, getOutput(script));
   }
 
   @Test
   public void shouldPassOnAsyncExecWithException() {
     executeAsync(SCRIPT_WITH_EXCEPTION);
-    assertThatThrownBy(() -> execution.getComputation().get())
+    assertThatThrownBy(() -> script.getComputation().get())
           .hasCauseExactlyInstanceOf(ExceptResException.class);
   }
 
@@ -112,15 +112,15 @@ public class ScriptExecutorTest {
   @Test
   public void shouldPassOnBlockingExec() {
     executeBlocking(FINITE_SCRIPT);
-    assertTrue(execution.getComputation().isDone() && ! execution.getComputation().isCompletedExceptionally());
-    assertEquals(FINITE_SCRIPT_RESULT, getOutput(execution));
-    assertEquals(ExecStatus.DONE.name(), getStatus(execution));
+    assertTrue(script.getComputation().isDone() && ! script.getComputation().isCompletedExceptionally());
+    assertEquals(FINITE_SCRIPT_RESULT, getOutput(script));
+    assertEquals(ExecStatus.DONE.name(), getStatus(script));
   }
 
   @Test
   public void shouldPassOnBlockingExecWithException() {
     executeBlocking(SCRIPT_WITH_EXCEPTION);
-    assertTrue(execution.getComputation().isCompletedExceptionally());
+    assertTrue(script.getComputation().isCompletedExceptionally());
   }
 
   //  cancelExec
@@ -130,19 +130,19 @@ public class ScriptExecutorTest {
         throws ExecutionException, InterruptedException {
     executeAsync(INFINITE_SCRIPT);
     Thread.sleep(100);
-    executor.cancelExec(execution);
-    await(execution);
-    assertEquals(ExecStatus.CANCELLED.name(), getStatus(execution));
+    executor.cancelExec(script);
+    await(script);
+    assertEquals(ExecStatus.CANCELLED.name(), getStatus(script));
   }
 
   @Test
   public void shouldPassOnCancellationExecWithFinishedStatus()
         throws ExecutionException, InterruptedException {
     executeAsync(INFINITE_SCRIPT);
-    executor.cancelExec(execution);
-    await(execution);
-    executor.cancelExec(execution);
-    assertEquals(ExecStatus.CANCELLED.name(), getStatus(execution));
+    executor.cancelExec(script);
+    await(script);
+    executor.cancelExec(script);
+    assertEquals(ExecStatus.CANCELLED.name(), getStatus(script));
   }
 
   @Test
@@ -155,7 +155,7 @@ public class ScriptExecutorTest {
       try {
         startLatch.countDown();
         startLatch.await();
-        executor.cancelExec(execution);
+        executor.cancelExec(script);
         successLatch.countDown();
       } catch (Exception e) {
         e.printStackTrace();
@@ -169,8 +169,8 @@ public class ScriptExecutorTest {
     startLatch.countDown();
     pool.shutdown();
     pool.awaitTermination(30, TimeUnit.SECONDS);
-    await(execution);
-    assertEquals(ExecStatus.CANCELLED.name(), getStatus(execution));
+    await(script);
+    assertEquals(ExecStatus.CANCELLED.name(), getStatus(script));
     assertEquals(0, successLatch.getCount());
   }
 
@@ -180,18 +180,18 @@ public class ScriptExecutorTest {
   public void shouldPassOnAwaiting()
         throws ExecutionException, InterruptedException, TimeoutException {
     executeAsync(INFINITE_SCRIPT);
-    executor.cancelExec(execution);
-    executor.awaitTermination(execution, 1, TimeUnit.MINUTES);
-    assertEquals(ExecStatus.CANCELLED.name(), getStatus(execution));
+    executor.cancelExec(script);
+    executor.awaitTermination(script, 1, TimeUnit.MINUTES);
+    assertEquals(ExecStatus.CANCELLED.name(), getStatus(script));
   }
 
   @Test
   public void shouldFailOnAwaitingWhenTimeout()
         throws ExecutionException, InterruptedException {
     executeAsync(INFINITE_SCRIPT);
-    assertThatThrownBy(() -> executor.awaitTermination(execution, 1, TimeUnit.SECONDS))
+    assertThatThrownBy(() -> executor.awaitTermination(script, 1, TimeUnit.SECONDS))
           .isInstanceOf(TimeoutException.class);
-    executor.cancelExec(execution);
+    executor.cancelExec(script);
   }
 
   // checkScript

@@ -1,8 +1,8 @@
 package impl.service;
 
 import impl.repositories.ScriptRepository;
-import impl.repositories.entities.ExecStatus;
 import impl.repositories.entities.Script;
+import impl.shared.ExecStatus;
 import impl.service.dto.*;
 import impl.service.exceptions.DeletionException;
 
@@ -11,9 +11,9 @@ import java.util.List;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -36,24 +36,24 @@ public class ScriptExecServiceImpl implements ScriptExecService{
 
   @Override
   public void executeScript(String id, OutputStream outputStream) {
-    repo.getScript(id).execute(outputStream);
+    repo.getScript(id).executeScript(outputStream);
   }
 
+  @Async
   @Override
   public void executeScriptAsync(String id) {
-    repo.getScript(id).executeAsync();
+    repo.getScript(id).executeScript();
   }
 
   @Override
-  @SneakyThrows
   public ScriptInfo getScriptInfo(String id) {
     Script script = repo.getScript(id);
     return getScriptInfo(script);
   }
 
   @Override
-  public byte[] getScriptText(String id) {
-    return repo.getScript(id).getScript();
+  public byte[] getScriptSource(String id) {
+    return repo.getScript(id).getSource();
   }
 
   @Override
@@ -62,18 +62,12 @@ public class ScriptExecServiceImpl implements ScriptExecService{
   }
 
   @Override
-  public byte[] getScriptErrOutput(String id) {
-    return repo.getScript(id).getErrOutput();
-  }
-
-  @Override
-  @SneakyThrows
   public void cancelScriptExecution(String id) {
     repo.getScript(id).cancel();
   }
 
   @Override
-  public void deleteScript(String execId) {
+  public synchronized void deleteScript(String execId) {
     if(isNotFinished(repo.getScript(execId).getStatus())) {
       throw new DeletionException(execId);
     }
@@ -88,16 +82,11 @@ public class ScriptExecServiceImpl implements ScriptExecService{
           .collect(Collectors.toList());
   }
 
-  @Override
-  public boolean isExist(String id) {
-    return repo.contains(id);
-  }
-
   private ScriptInfo getScriptInfo(Script script) {
     script.getReadLock().lock();
     ScriptInfo info = new ScriptInfo(
           script.getId(),
-          script.getStatus().name(),
+          script.getStatus(),
           script.getScheduledTime(),
           script.getStartTime(),
           script.getFinishTime(),

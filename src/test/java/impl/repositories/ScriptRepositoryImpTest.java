@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import impl.repositories.entities.Execution;
-import impl.repositories.entities.ExecStatus;
+import impl.repositories.entities.Script;
+import impl.shared.ExecStatus;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 import java.util.Set;
@@ -23,7 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class ScriptRepositoryImpTest {
   private ScriptRepositoryImpl repo;
-  private final Execution EXECUTION = new Execution(
+  private final Script Script = new Script(
         "script",
         new AtomicReference<>(ExecStatus.QUEUE),
         new ByteArrayOutputStream(),
@@ -41,16 +41,16 @@ public class ScriptRepositoryImpTest {
 
   @Test
   public void shouldPassOnAddingExec() {
-    String id = repo.addScript(EXECUTION);
-    Execution exec = repo.getScript(id);
-    assertEquals(EXECUTION, exec);
+    String id = repo.addScript(Script);
+    Script exec = repo.getScript(id);
+    assertEquals(Script, exec);
   }
 
   @Test
   public void shouldPassOnGettingExec() {
-    String id = repo.addScript(EXECUTION);
-    Execution exec = repo.getScript(id);
-    assertEquals(EXECUTION, exec);
+    String id = repo.addScript(Script);
+    Script exec = repo.getScript(id);
+    assertEquals(Script, exec);
   }
 
   @Test
@@ -62,9 +62,9 @@ public class ScriptRepositoryImpTest {
 
   @Test
   public void shouldPassOnRemovingExec() {
-    String id = repo.addScript(EXECUTION);
-    Execution exec = repo.getScript(id);
-    assertEquals(EXECUTION, exec);
+    String id = repo.addScript(Script);
+    Script exec = repo.getScript(id);
+    assertEquals(Script, exec);
     repo.removeScript(id);
     assertThatThrownBy(() -> repo.getScript(id))
           .isInstanceOf(UnknownIdException.class)
@@ -80,8 +80,8 @@ public class ScriptRepositoryImpTest {
 
   @Test
   public void shouldPassOnGettingAllExecIds() {
-    String id = repo.addScript(EXECUTION);
-    String id1 = repo.addScript(EXECUTION);
+    String id = repo.addScript(Script);
+    String id1 = repo.addScript(Script);
     Set<String> ids = repo.getAllIds();
     assertEquals(2, ids.size());
     assertTrue(ids.containsAll(Arrays.asList(id, id1)));

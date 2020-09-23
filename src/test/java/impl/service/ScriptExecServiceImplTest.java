@@ -7,8 +7,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import impl.repositories.ScriptRepository;
-import impl.repositories.entities.ExecStatus;
-import impl.repositories.entities.Execution;
+import impl.shared.ExecStatus;
+import impl.repositories.entities.Script;
 import impl.service.exceptions.DeletionException;
 import impl.service.exceptions.ExceptResException;
 import impl.service.exceptions.SyntaxErrorException;
@@ -31,7 +31,7 @@ public class ScriptExecServiceImplTest {
   private static ScriptExecServiceImpl service;
   private final String SCRIPT = "console.log('hello')";
   private final String SCRIPT_ID = "id";
-  private Execution execution;
+  private Script script;
   private final SyntaxErrorException SYN_ERR_EXCEPTION = new SyntaxErrorException("", "");
   private final ExceptResException EXCEPTION_RES_EXCEPTION = new ExceptResException("");
   private final ByteArrayOutputStream stream = new ByteArrayOutputStream();
@@ -45,7 +45,7 @@ public class ScriptExecServiceImplTest {
   @BeforeEach
   public void setup() {
     service = new ScriptExecServiceImpl(repo, executor);
-    execution = new Execution(
+    script = new Script(
           SCRIPT,
           new AtomicReference<>(ExecStatus.QUEUE),
           new ByteArrayOutputStream(),
@@ -54,11 +54,11 @@ public class ScriptExecServiceImplTest {
     );
   }
 
-  private String getStatus(Execution exec) {
+  private String getStatus(Script exec) {
     return exec.getStatus().get().name();
   }
 
-  private String getOutput(Execution exec) {
+  private String getOutput(Script exec) {
     return exec.getOutputStream().toString();
   }
 
@@ -97,15 +97,15 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldPassOnBlockingExec() {
-    execution.getStatus().set(ExecStatus.CREATED);
-    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(execution));
+    script.getStatus().set(ExecStatus.CREATED);
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(script));
     assertThatCode(() -> service.executeScript(SCRIPT_ID))
           .doesNotThrowAnyException();
   }
 
   @Test
   public void shouldFailOnBlockingExecWithNotCreatedStatus() {
-    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(execution));
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(script));
     assertThatThrownBy(() -> service.executeScript(SCRIPT_ID))
           .isInstanceOf(IllegalArgumentException.class);
   }
@@ -115,7 +115,7 @@ public class ScriptExecServiceImplTest {
   @Test
   public void shouldPassOnCancellation() {
     Mockito.when(repo.getScript(SCRIPT_ID))
-          .thenReturn(Optional.of(execution));
+          .thenReturn(Optional.of(script));
     assertThatCode(() -> service.cancelExecution(SCRIPT_ID))
           .doesNotThrowAnyException();
   }
@@ -134,7 +134,7 @@ public class ScriptExecServiceImplTest {
   @Test
   public void shouldFailOnDeletionOfNotCancelledExec() {
     Mockito.when(repo.getScript(SCRIPT_ID))
-          .thenReturn(Optional.of(execution));
+          .thenReturn(Optional.of(script));
     assertThatThrownBy(() -> service.deleteExecution(SCRIPT_ID))
           .isInstanceOf(DeletionException.class)
           .hasMessage(DeletionException.generateMessage(SCRIPT_ID));
@@ -142,11 +142,11 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldPassOnDeletionOfFinishedExec() {
-    execution.getComputation().complete(null);
+    script.getComputation().complete(null);
     Mockito.when(repo.getScript(SCRIPT_ID))
-          .thenReturn(Optional.of(execution));
+          .thenReturn(Optional.of(script));
     Mockito.when(repo.removeScript(SCRIPT_ID))
-          .thenReturn(Optional.of(execution));
+          .thenReturn(Optional.of(script));
     assertThatCode(() -> service.deleteExecution(SCRIPT_ID))
           .doesNotThrowAnyException();
   }
@@ -163,18 +163,18 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldPassOnGettingStatus() {
-    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(execution));
-    execution.getComputation().complete(null);
-    execution.getStatus().set(ExecStatus.DONE);
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(script));
+    script.getComputation().complete(null);
+    script.getStatus().set(ExecStatus.DONE);
     QueueScriptInfo status = service.getExecutionStatus(SCRIPT_ID);
     assertFalse(status.getMessage().isPresent());
-    assertEquals(getStatus(execution), status.getStatus());
+    assertEquals(getStatus(script), status.getStatus());
   }
 
   @Test
   public void shouldPassOnGettingExceptionStatus() {
-    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(execution));
-    execution.getComputation().completeExceptionally(EXCEPTION_RES_EXCEPTION);
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(script));
+    script.getComputation().completeExceptionally(EXCEPTION_RES_EXCEPTION);
     QueueScriptInfo status = service.getExecutionStatus(SCRIPT_ID);
     assertTrue(status.getMessage().isPresent());
     assertEquals(ExecStatus.DONE_WITH_EXCEPTION.name(), status.getStatus());
@@ -193,9 +193,9 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldPassOnGettingOutput() {
-    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(execution));
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(script));
     String output = service.getExecutionOutput(SCRIPT_ID);
-    assertEquals(getOutput(execution), output);
+    assertEquals(getOutput(script), output);
   }
 
   @Test
@@ -211,9 +211,9 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldPassOnGettingScript() {
-    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(execution));
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(script));
     String script = service.getExecutionScript(SCRIPT_ID);
-    assertEquals(execution.getScript(), script);
+    assertEquals(this.script.getScriptSource(), script);
   }
 
   @Test

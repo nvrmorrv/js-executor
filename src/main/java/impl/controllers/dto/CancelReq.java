@@ -1,10 +1,12 @@
 package impl.controllers.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @AllArgsConstructor
-@Getter
+@NoArgsConstructor
+@Data
 public class CancelReq {
-  private final String status;
+  private String status;
 }

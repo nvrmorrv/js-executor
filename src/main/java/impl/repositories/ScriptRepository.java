@@ -1,6 +1,7 @@
 package impl.repositories;
 
 import impl.repositories.entities.Script;
+
 import java.util.List;
 
 public interface ScriptRepository {
