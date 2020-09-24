@@ -16,12 +16,16 @@ import impl.controllers.dto.*;
 import impl.controllers.exceptions.CancellationException;
 import impl.service.ScriptExecService;
 import impl.service.dto.ScriptInfo;
+import impl.service.dto.SortParams;
 import impl.shared.ExecStatus;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
@@ -37,6 +41,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 @AllArgsConstructor
 public class ExecutorController {
   private final ScriptExecService service;
+  private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss:SSS;dd-MM-uuuu;O");
 
   @GetMapping("/")
   @GetRootApiEndpoint
@@ -45,19 +50,23 @@ public class ExecutorController {
           .contentType(MediaType.APPLICATION_JSON)
           .body(CollectionModel.of(
                 Collections.emptyList(),
-                linkTo(methodOn(getClass()).getScripts()).withRel("scripts"),
+                linkTo(methodOn(getClass()).getScripts(null, null, null)).withRel("scripts"),
                 linkTo(methodOn(getClass()).getRoot()).withSelfRel()));
   }
 
   @GetMapping("/scripts")
   @GetExecListApiEndpoint
-  public ResponseEntity<CollectionModel<CommonStatusResp>> getScripts() {
-    Link self = linkTo(methodOn(getClass()).getScripts()).withSelfRel();
-    List<CommonStatusResp> scripts = getScriptListResp(service.getScripts());
+  public ResponseEntity<CollectionModel<CommonStatusResp>> getScripts(
+        @RequestParam(name = "sort-field", required = false, defaultValue = "create-time") String sortField,
+        @RequestParam(name = "sort-order", required = false, defaultValue = "asc") String sortOrder,
+        @RequestParam(name = "status", required = false, defaultValue = "any") String status) {
+    SortParams sortParams = new SortParams(sortField, sortOrder, status);
+    List<CommonStatusResp> scripts = getScriptListResp(service.getScripts(sortParams));
+    Link selfLink = linkTo(methodOn(getClass()).getScripts(null, null, null)).withSelfRel();
     return ResponseEntity.ok()
           .contentType(MediaType.APPLICATION_JSON)
           .body(CollectionModel.of(scripts,
-                self, getAsyncExecLink("{id}"), getBlockExecLink("{id}")));
+                selfLink, getAsyncExecLink("{id}"), getBlockExecLink("{id}")));
   }
 
   @PutMapping(
@@ -78,7 +87,16 @@ public class ExecutorController {
           : ResponseEntity.ok()
           .contentType(MediaType.APPLICATION_JSON)
           .body(resp);
+  }
 
+  @PutMapping(
+        path = "/scripts/{id}",
+        consumes = MediaType.TEXT_PLAIN_VALUE)
+  @Hidden
+  public ResponseEntity<ScriptId> executeScriptAsyncByDefault(@PathVariable(name = "id") String scriptId,
+                                                              @RequestBody byte[] body,
+                                                              TimeZone timeZone) {
+    return executeScriptAsync(scriptId, body, timeZone);
   }
 
   @PutMapping(
@@ -175,19 +193,33 @@ public class ExecutorController {
     if(info.getStatus() != ExecStatus.DONE_WITH_EXCEPTION) {
       return getCommonStatusResp(info);
     } else {
-      return new ExceptionStatusResp(info.getId(), info.getStatus().name(), info.getScheduledTime(),
-            info.getStartTime(), info.getScheduledTime(), info.getMessage(), info.getStackTrace());
+      return new ExceptionStatusResp(
+            info.getId(),
+            info.getStatus().name(),
+            info.getCreateTime().format(formatter),
+            getString(info.getStartTime()),
+            getString(info.getFinishTime()),
+            info.getMessage().orElse(""),
+            info.getStackTrace().orElse(Collections.emptyList()));
     }
   }
 
   private CommonStatusResp getCommonStatusResp(ScriptInfo info) {
-    return new CommonStatusResp(info.getId(), info.getStatus().name(), info.getScheduledTime(),
-          info.getStartTime(), info.getFinishTime());
+    return new CommonStatusResp(
+          info.getId(),
+          info.getStatus().name(),
+          info.getCreateTime().format(formatter),
+          getString(info.getStartTime()),
+          getString(info.getFinishTime()));
   }
 
   private ScriptId getScriptId(String id) {
     ScriptId scriptId = new ScriptId(id);
     scriptId.add(linkTo(methodOn(getClass()).getScript(id)).withRel("self"));
     return scriptId;
+  }
+
+  private String getString(Optional<ZonedDateTime> dateTime) {
+    return dateTime.map(zonedDateTime -> zonedDateTime.format(formatter)).orElse("");
   }
 }

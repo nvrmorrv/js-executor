@@ -2,6 +2,7 @@ package impl.controllers;
 
 import impl.controllers.exceptions.CancellationException;
 import impl.service.exceptions.DeletionException;
+import impl.service.exceptions.SortParametersException;
 import impl.service.exceptions.SyntaxErrorException;
 import impl.repositories.exceptions.UnknownIdException;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -29,6 +30,16 @@ public class ExecutorControllerAdvise {
      .withDetail(ex.getMessage())
      .with("section", ex.getSection())
      .build();
+  }
+
+  @ExceptionHandler(SortParametersException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public Problem response(SortParametersException ex) {
+    return Problem.builder()
+          .withTitle("Sort parameters error")
+          .withStatus(Status.BAD_REQUEST)
+          .withDetail(ex.getMessage())
+          .build();
   }
 
   @ExceptionHandler(CancellationException.class)

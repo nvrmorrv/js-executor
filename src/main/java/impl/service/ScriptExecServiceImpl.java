@@ -1,5 +1,7 @@
 package impl.service;
 
+import static impl.service.ScriptSorter.sort;
+
 import impl.repositories.ScriptRepository;
 import impl.repositories.entities.Script;
 import impl.shared.ExecStatus;
@@ -47,8 +49,7 @@ public class ScriptExecServiceImpl implements ScriptExecService{
 
   @Override
   public ScriptInfo getScriptInfo(String id) {
-    Script script = repo.getScript(id);
-    return getScriptInfo(script);
+    return repo.getScript(id).getScriptInfo();
   }
 
   @Override
@@ -76,24 +77,10 @@ public class ScriptExecServiceImpl implements ScriptExecService{
 
 
   @Override
-  public List<ScriptInfo> getScripts() {
-    return repo.getScripts().stream()
-          .map(this::getScriptInfo)
-          .collect(Collectors.toList());
-  }
-
-  private ScriptInfo getScriptInfo(Script script) {
-    script.getReadLock().lock();
-    ScriptInfo info = new ScriptInfo(
-          script.getId(),
-          script.getStatus(),
-          script.getScheduledTime(),
-          script.getStartTime(),
-          script.getFinishTime(),
-          script.getExMessage(),
-          script.getStackTrace());
-    script.getReadLock().unlock();
-    return info;
+  public List<ScriptInfo> getScripts(SortParams params) {
+    return sort(repo.getScripts().stream()
+          .map(Script::getScriptInfo)
+          .collect(Collectors.toList()), params);
   }
 
   private void checkScriptForCompleteness(String id) {

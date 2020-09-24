@@ -2,6 +2,7 @@ package impl.service;
 
 import impl.service.dto.ScriptInfo;
 
+import impl.service.dto.SortParams;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.TimeZone;
@@ -24,5 +25,5 @@ public interface ScriptExecService {
 
   void deleteScript(String execId);
 
-  List<ScriptInfo> getScripts();
+  List<ScriptInfo> getScripts(SortParams sortParams);
 }

@@ -1,6 +1,8 @@
 package impl.service.dto;
 
 import impl.shared.ExecStatus;
+import java.time.ZonedDateTime;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -11,9 +13,9 @@ import java.util.List;
 public class ScriptInfo {
   private final String id;
   private final ExecStatus status;
-  private final String scheduledTime;
-  private final String startTime;
-  private final String finishTime;
-  private final String message;
-  private final List<String> stackTrace;
+  private final ZonedDateTime createTime;
+  private final Optional<ZonedDateTime> startTime;
+  private final Optional<ZonedDateTime> finishTime;
+  private final Optional<String> message;
+  private final Optional<List<String>> stackTrace;
 }
