@@ -2,7 +2,7 @@ package impl.service;
 
 import impl.aspects.annotations.Running;
 import impl.repositories.entities.Script;
-import impl.service.dto.ScriptInfo;
+import impl.shared.ScriptInfo;
 import impl.shared.ExecStatus;
 import impl.service.exceptions.SyntaxErrorException;
 import io.micrometer.core.annotation.Timed;

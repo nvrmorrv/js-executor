@@ -1,13 +1,12 @@
 package impl.service;
 
-import static impl.service.ScriptSorter.sort;
-
 import impl.repositories.ScriptRepository;
 import impl.repositories.entities.Script;
 import impl.shared.ExecStatus;
 import impl.service.dto.*;
 import impl.service.exceptions.DeletionException;
 
+import impl.shared.ScriptInfo;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.TimeZone;

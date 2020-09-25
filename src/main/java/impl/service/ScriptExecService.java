@@ -1,6 +1,6 @@
 package impl.service;
 
-import impl.service.dto.ScriptInfo;
+import impl.shared.ScriptInfo;
 
 import impl.service.dto.SortParams;
 import java.io.OutputStream;

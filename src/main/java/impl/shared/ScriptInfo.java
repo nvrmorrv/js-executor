@@ -1,16 +1,15 @@
-package impl.service.dto;
+package impl.shared;
 
-import impl.shared.ExecStatus;
+import java.io.Serializable;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-import java.util.List;
-
 @AllArgsConstructor
 @Getter
-public class ScriptInfo {
+public class ScriptInfo implements Serializable {
   private final String id;
   private final ExecStatus status;
   private final ZonedDateTime createTime;

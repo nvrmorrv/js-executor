@@ -1,13 +1,13 @@
 package impl.repositories.entities;
 
-import impl.service.dto.ScriptInfo;
+import impl.shared.ScriptInfo;
 import impl.shared.ExecStatus;
-import org.springframework.data.annotation.Id;
-
 import java.io.OutputStream;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.keyvalue.annotation.KeySpace;
 
+@KeySpace
 public interface Script {
-
   @Id
   String getId();
 
@@ -17,6 +17,7 @@ public interface Script {
 
   byte[] getOutput();
 
+  @KeySpace
   ScriptInfo getScriptInfo();
 
   void executeScript(OutputStream outputStream);

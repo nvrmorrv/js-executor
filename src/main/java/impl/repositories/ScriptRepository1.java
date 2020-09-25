@@ -3,16 +3,18 @@ package impl.repositories;
 import impl.repositories.entities.Script;
 import impl.repositories.exceptions.UnknownIdException;
 import impl.shared.ExecStatus;
+import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface ScriptRepository1 extends PagingAndSortingRepository<Script, String> {
+
+  List<Script> findScriptsByStatus(ExecStatus status, Pageable pageable);
+
+  List<Script> findScripts(Pageable pageable);
 
   default boolean addOrUpdateScript(String id, Script script) {
     boolean isNew = !existsById(id);
@@ -29,15 +31,7 @@ public interface ScriptRepository1 extends PagingAndSortingRepository<Script, St
     deleteById(scriptId);
   }
 
-  default List<Script> getScripts(Pageable pageable, Optional<ExecStatus> status) {
-    return findAll(pageable)
-          .getContent()
-          .stream()
-          .filter();
-  }
-
   default boolean contains(String scriptId) {
     return existsById(scriptId);
   }
-
 }
