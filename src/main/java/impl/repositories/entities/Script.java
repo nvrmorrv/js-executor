@@ -2,10 +2,13 @@ package impl.repositories.entities;
 
 import impl.service.dto.ScriptInfo;
 import impl.shared.ExecStatus;
+import org.springframework.data.annotation.Id;
+
 import java.io.OutputStream;
 
 public interface Script {
 
+  @Id
   String getId();
 
   ExecStatus getStatus();

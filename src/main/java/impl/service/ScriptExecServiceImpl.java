@@ -78,9 +78,9 @@ public class ScriptExecServiceImpl implements ScriptExecService{
 
   @Override
   public List<ScriptInfo> getScripts(SortParams params) {
-    return sort(repo.getScripts().stream()
+    return repo.getScripts().stream()
           .map(Script::getScriptInfo)
-          .collect(Collectors.toList()), params);
+          .collect(Collectors.toList());
   }
 
   private void checkScriptForCompleteness(String id) {

@@ -29,8 +29,14 @@ import java.util.Optional;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -50,23 +56,29 @@ public class ExecutorController {
           .contentType(MediaType.APPLICATION_JSON)
           .body(CollectionModel.of(
                 Collections.emptyList(),
-                linkTo(methodOn(getClass()).getScripts(null, null, null)).withRel("scripts"),
+                linkTo(methodOn(getClass()).getScripts(null, null)).withRel("scripts"),
                 linkTo(methodOn(getClass()).getRoot()).withSelfRel()));
   }
 
   @GetMapping("/scripts")
   @GetExecListApiEndpoint
-  public ResponseEntity<CollectionModel<CommonStatusResp>> getScripts(
+  public ResponseEntity<PagedModel<EntityModel<CommonStatusResp>>> getScripts(
+        Pageable pageable,
+        PagedResourcesAssembler<CommonStatusResp> assembler/*,
         @RequestParam(name = "sort-field", required = false, defaultValue = "create-time") String sortField,
         @RequestParam(name = "sort-order", required = false, defaultValue = "asc") String sortOrder,
-        @RequestParam(name = "status", required = false, defaultValue = "any") String status) {
-    SortParams sortParams = new SortParams(sortField, sortOrder, status);
-    List<CommonStatusResp> scripts = getScriptListResp(service.getScripts(sortParams));
-    Link selfLink = linkTo(methodOn(getClass()).getScripts(null, null, null)).withSelfRel();
+        @RequestParam(name = "status", required = false, defaultValue = "any") String status*/) {
+    //SortParams sortParams = new SortParams(sortField, sortOrder, status);
+    List<CommonStatusResp> scripts = getScriptListResp(service.getScripts(null));
+    Page<CommonStatusResp> page = new PageImpl<>(scripts, pageable, scripts.size());
+    Link selfLink = linkTo(methodOn(getClass()).getScripts(pageable, assembler)).withSelfRel();
+    PagedModel<EntityModel<CommonStatusResp>> pagedModel = assembler.toModel(page, selfLink);
+    pagedModel.add(getAsyncExecLink("{id}"), getBlockExecLink("{id}"));
     return ResponseEntity.ok()
           .contentType(MediaType.APPLICATION_JSON)
-          .body(CollectionModel.of(scripts,
-                selfLink, getAsyncExecLink("{id}"), getBlockExecLink("{id}")));
+          .body(pagedModel);
+//          .body(CollectionModel.of(scripts,
+//                selfLink, getAsyncExecLink("{id}"), getBlockExecLink("{id}")));
   }
 
   @PutMapping(
