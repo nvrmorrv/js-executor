@@ -1,9 +1,10 @@
 package impl.service;
 
+import static impl.service.PagingAndSortingService.getSortedPage;
+
 import impl.repositories.ScriptRepository;
 import impl.repositories.entities.Script;
-import impl.shared.ExecStatus;
-import impl.service.dto.*;
+import impl.shared.ScriptStatus;
 import impl.service.exceptions.DeletionException;
 
 import impl.shared.ScriptInfo;
@@ -14,6 +15,8 @@ import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -74,12 +77,11 @@ public class ScriptExecServiceImpl implements ScriptExecService{
     repo.removeScript(execId);
   }
 
-
   @Override
-  public List<ScriptInfo> getScripts(SortParams params) {
-    return repo.getScripts().stream()
-          .map(Script::getScriptInfo)
-          .collect(Collectors.toList());
+  public Page<ScriptInfo> getScriptInfoPage(Pageable pageable, String filterStatus) {
+    List<ScriptInfo> list = repo.getScripts().stream()
+          .map(Script::getScriptInfo).collect(Collectors.toList());
+    return getSortedPage(list, pageable, filterStatus);
   }
 
   private void checkScriptForCompleteness(String id) {
@@ -88,7 +90,7 @@ public class ScriptExecServiceImpl implements ScriptExecService{
     }
   }
 
-  private boolean isNotFinished(ExecStatus status) {
-    return !ExecStatus.FINISHED.contains(status);
+  private boolean isNotFinished(ScriptStatus status) {
+    return !ScriptStatus.FINISHED.contains(status);
   }
 }

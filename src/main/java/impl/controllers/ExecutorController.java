@@ -1,5 +1,7 @@
 package impl.controllers;
 
+import static impl.controllers.utils.ResponseMapper.getCommonStatusResp;
+import static impl.controllers.utils.ResponseMapper.getExceptionStatusResp;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 import static org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder.fromController;
@@ -14,26 +16,22 @@ import impl.controllers.doc.GetExecStatusApiEndpoint;
 import impl.controllers.doc.GetRootApiEndpoint;
 import impl.controllers.dto.*;
 import impl.controllers.exceptions.CancellationException;
+import impl.controllers.utils.CommonStatusRespAssembler;
 import impl.service.ScriptExecService;
 import impl.shared.ScriptInfo;
-import impl.shared.ExecStatus;
+import impl.shared.ScriptStatus;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 import java.util.TimeZone;
-import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.CollectionModel;
-import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.MediaType;
@@ -46,7 +44,8 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 @AllArgsConstructor
 public class ExecutorController {
   private final ScriptExecService service;
-  private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss:SSS;dd-MM-uuuu;O");
+  private final CommonStatusRespAssembler respAssembler =
+        new CommonStatusRespAssembler(id -> linkTo(methodOn(getClass()).getScript(id)).withSelfRel());
 
   @GetMapping("/")
   @GetRootApiEndpoint
@@ -55,29 +54,23 @@ public class ExecutorController {
           .contentType(MediaType.APPLICATION_JSON)
           .body(CollectionModel.of(
                 Collections.emptyList(),
-                linkTo(methodOn(getClass()).getScripts(null, null)).withRel("scripts"),
+                linkTo(methodOn(getClass()).getScripts(null, null, null)).withRel("scripts"),
                 linkTo(methodOn(getClass()).getRoot()).withSelfRel()));
   }
 
   @GetMapping("/scripts")
   @GetExecListApiEndpoint
-  public ResponseEntity<PagedModel<EntityModel<CommonStatusResp>>> getScripts(
-        Pageable pageable,
-        PagedResourcesAssembler<CommonStatusResp> assembler/*,
-        @RequestParam(name = "sort-field", required = false, defaultValue = "create-time") String sortField,
-        @RequestParam(name = "sort-order", required = false, defaultValue = "asc") String sortOrder,
-        @RequestParam(name = "status", required = false, defaultValue = "any") String status*/) {
-    //SortParams sortParams = new SortParams(sortField, sortOrder, status);
-    List<CommonStatusResp> scripts = getScriptListResp(service.getScripts(null));
-    Page<CommonStatusResp> page = new PageImpl<>(scripts, pageable, scripts.size());
-    Link selfLink = linkTo(methodOn(getClass()).getScripts(pageable, assembler)).withSelfRel();
-    PagedModel<EntityModel<CommonStatusResp>> pagedModel = assembler.toModel(page, selfLink);
+  public ResponseEntity<PagedModel<CommonStatusResp>> getScripts(
+        @RequestParam(value = "status", required = false, defaultValue = "ANY") String filterStatus,
+        @PageableDefault(sort = "createTime") Pageable pageable,
+        PagedResourcesAssembler<ScriptInfo> pagedResourcesAssembler) {
+    Page<ScriptInfo> page = service.getScriptInfoPage(pageable, filterStatus);
+    Link selfLink = linkTo(methodOn(getClass()).getScripts(filterStatus, pageable, pagedResourcesAssembler)).withSelfRel();
+    PagedModel<CommonStatusResp> pagedModel = pagedResourcesAssembler.toModel(page, respAssembler, selfLink);
     pagedModel.add(getAsyncExecLink("{id}"), getBlockExecLink("{id}"));
     return ResponseEntity.ok()
           .contentType(MediaType.APPLICATION_JSON)
           .body(pagedModel);
-//          .body(CollectionModel.of(scripts,
-//                selfLink, getAsyncExecLink("{id}"), getBlockExecLink("{id}")));
   }
 
   @PutMapping(
@@ -127,14 +120,13 @@ public class ExecutorController {
           : ResponseEntity.ok()
           .contentType(MediaType.TEXT_PLAIN)
           .body(responseBody);
-
   }
 
   @GetMapping("/scripts/{id}")
   @GetExecStatusApiEndpoint
   public ResponseEntity<StatusResp> getScript(@PathVariable(name = "id") String scriptId) {
     ScriptInfo info = service.getScriptInfo(scriptId);
-    StatusResp resp = getExecResp(info);
+    StatusResp resp = getStatusResp(info);
     resp.add(linkTo(methodOn(ExecutorController.class).getScript(scriptId)).withSelfRel());
     resp.add(linkTo(methodOn(ExecutorController.class).cancelExecution(null, scriptId)).withRel("cancel").withType("PATCH"));
     resp.add(linkTo(methodOn(ExecutorController.class).deleteScript(scriptId)).withRel("delete").withType("DELETE"));
@@ -149,7 +141,7 @@ public class ExecutorController {
   @CancelExecApiEndpoint
   public ResponseEntity<ScriptId> cancelExecution(@RequestBody CancelReq req,
                                                   @PathVariable(name = "id") String scriptId) {
-    if(!req.getStatus().equals(ExecStatus.CANCELLED.name())){
+    if(!req.getStatus().equals(ScriptStatus.CANCELLED.name())){
       throw new CancellationException();
     }
     service.cancelScriptExecution(scriptId);
@@ -193,44 +185,17 @@ public class ExecutorController {
           .withType("PUT");
   }
 
-  private List<CommonStatusResp> getScriptListResp(List<ScriptInfo> scriptList) {
-    return scriptList.stream()
-          .map(this::getCommonStatusResp)
-          .peek(resp -> resp.add(linkTo(methodOn(getClass()).getScript(resp.getId())).withRel("self")))
-          .collect(Collectors.toList());
-  }
-
-  private StatusResp getExecResp(ScriptInfo info) {
-    if(info.getStatus() != ExecStatus.DONE_WITH_EXCEPTION) {
+  private StatusResp getStatusResp(ScriptInfo info) {
+    if (info.getStatus() != ScriptStatus.DONE_WITH_EXCEPTION) {
       return getCommonStatusResp(info);
     } else {
-      return new ExceptionStatusResp(
-            info.getId(),
-            info.getStatus().name(),
-            info.getCreateTime().format(formatter),
-            getString(info.getStartTime()),
-            getString(info.getFinishTime()),
-            info.getMessage().orElse(""),
-            info.getStackTrace().orElse(Collections.emptyList()));
+      return getExceptionStatusResp(info);
     }
-  }
-
-  private CommonStatusResp getCommonStatusResp(ScriptInfo info) {
-    return new CommonStatusResp(
-          info.getId(),
-          info.getStatus().name(),
-          info.getCreateTime().format(formatter),
-          getString(info.getStartTime()),
-          getString(info.getFinishTime()));
   }
 
   private ScriptId getScriptId(String id) {
     ScriptId scriptId = new ScriptId(id);
     scriptId.add(linkTo(methodOn(getClass()).getScript(id)).withRel("self"));
     return scriptId;
-  }
-
-  private String getString(Optional<ZonedDateTime> dateTime) {
-    return dateTime.map(zonedDateTime -> zonedDateTime.format(formatter)).orElse("");
   }
 }

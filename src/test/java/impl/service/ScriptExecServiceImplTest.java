@@ -7,10 +7,9 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import impl.repositories.ScriptRepository;
-import impl.shared.ExecStatus;
+import impl.shared.ScriptStatus;
 import impl.repositories.entities.Script;
 import impl.service.exceptions.DeletionException;
-import impl.service.exceptions.ExceptResException;
 import impl.service.exceptions.SyntaxErrorException;
 import impl.repositories.exceptions.UnknownIdException;
 import java.io.ByteArrayOutputStream;
@@ -47,7 +46,7 @@ public class ScriptExecServiceImplTest {
     service = new ScriptExecServiceImpl(repo, executor);
     script = new Script(
           SCRIPT,
-          new AtomicReference<>(ExecStatus.QUEUE),
+          new AtomicReference<>(ScriptStatus.QUEUE),
           new ByteArrayOutputStream(),
           new CompletableFuture<>(),
           new CompletableFuture<>()
@@ -97,7 +96,7 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldPassOnBlockingExec() {
-    script.getStatus().set(ExecStatus.CREATED);
+    script.getStatus().set(ScriptStatus.CREATED);
     Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(script));
     assertThatCode(() -> service.executeScript(SCRIPT_ID))
           .doesNotThrowAnyException();
@@ -165,7 +164,7 @@ public class ScriptExecServiceImplTest {
   public void shouldPassOnGettingStatus() {
     Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(script));
     script.getComputation().complete(null);
-    script.getStatus().set(ExecStatus.DONE);
+    script.getStatus().set(ScriptStatus.DONE);
     QueueScriptInfo status = service.getExecutionStatus(SCRIPT_ID);
     assertFalse(status.getMessage().isPresent());
     assertEquals(getStatus(script), status.getStatus());
@@ -177,7 +176,7 @@ public class ScriptExecServiceImplTest {
     script.getComputation().completeExceptionally(EXCEPTION_RES_EXCEPTION);
     QueueScriptInfo status = service.getExecutionStatus(SCRIPT_ID);
     assertTrue(status.getMessage().isPresent());
-    assertEquals(ExecStatus.DONE_WITH_EXCEPTION.name(), status.getStatus());
+    assertEquals(ScriptStatus.DONE_WITH_EXCEPTION.name(), status.getStatus());
   }
 
   @Test

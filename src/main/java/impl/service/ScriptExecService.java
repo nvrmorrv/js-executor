@@ -2,10 +2,10 @@ package impl.service;
 
 import impl.shared.ScriptInfo;
 
-import impl.service.dto.SortParams;
 import java.io.OutputStream;
-import java.util.List;
 import java.util.TimeZone;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface ScriptExecService {
 
@@ -25,5 +25,5 @@ public interface ScriptExecService {
 
   void deleteScript(String execId);
 
-  List<ScriptInfo> getScripts(SortParams sortParams);
+  Page<ScriptInfo> getScriptInfoPage(Pageable pageable, String filterStatus);
 }

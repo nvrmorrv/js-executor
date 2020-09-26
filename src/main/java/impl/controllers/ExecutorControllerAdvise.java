@@ -2,6 +2,7 @@ package impl.controllers;
 
 import impl.controllers.exceptions.CancellationException;
 import impl.service.exceptions.DeletionException;
+import impl.service.exceptions.PaginationException;
 import impl.service.exceptions.SortParametersException;
 import impl.service.exceptions.SyntaxErrorException;
 import impl.repositories.exceptions.UnknownIdException;
@@ -37,6 +38,16 @@ public class ExecutorControllerAdvise {
   public Problem response(SortParametersException ex) {
     return Problem.builder()
           .withTitle("Sort parameters error")
+          .withStatus(Status.BAD_REQUEST)
+          .withDetail(ex.getMessage())
+          .build();
+  }
+
+  @ExceptionHandler(PaginationException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public Problem response(PaginationException ex) {
+    return Problem.builder()
+          .withTitle("Pagination parameters error")
           .withStatus(Status.BAD_REQUEST)
           .withDetail(ex.getMessage())
           .build();

@@ -3,7 +3,7 @@ package impl.service;
 import impl.aspects.annotations.Running;
 import impl.repositories.entities.Script;
 import impl.shared.ScriptInfo;
-import impl.shared.ExecStatus;
+import impl.shared.ScriptStatus;
 import impl.service.exceptions.SyntaxErrorException;
 import io.micrometer.core.annotation.Timed;
 
@@ -25,22 +25,23 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ScriptImpl implements Script {
-  private final ReadWriteLock lock = new ReentrantReadWriteLock();
-  private final CompletableFuture<Runnable> ctCreation = new CompletableFuture<>();
-  private final String lang;
   @Getter
   private final String id;
   @Getter
   private final byte[] source;
-  private final TimeZone timeZone;
+  @Getter
+  private ScriptStatus status = ScriptStatus.QUEUE;
   private final ZonedDateTime createTime;
   private ZonedDateTime startTime;
   private ZonedDateTime finishTime;
-  private ByteArrayOutputStream outputStream;
-  @Getter
-  private ExecStatus status = ExecStatus.QUEUE;
   private String exMessage;
   private List<String> stackTrace;
+  private ByteArrayOutputStream outputStream;
+  private final TimeZone timeZone;
+  private final ReadWriteLock lock = new ReentrantReadWriteLock();
+  private final CompletableFuture<Runnable> ctCreation = new CompletableFuture<>();
+  private final String lang;
+
 
   public ScriptImpl(String lang, String id, byte[] source, TimeZone timeZone) {
     this.lang = lang;
@@ -51,28 +52,20 @@ public class ScriptImpl implements Script {
     this.createTime = ZonedDateTime.now(timeZone.toZoneId());
   }
 
+  @Running
+  @Timed(value = "running_time")
   @Override
   public void executeScript() {
     this.outputStream = new ByteArrayOutputStream();
     execute();
   }
 
+  @Running
+  @Timed(value = "running_time")
   @Override
   public void executeScript(OutputStream stream) {
     this.outputStream = new OutputStreamWrapper(stream);
     execute();
-  }
-
-  @SneakyThrows
-  public void cancel() {
-    synchronized (ctCreation) {
-      if(!ctCreation.isCancelled()) {
-        if (ctCreation.isDone()) {
-          ctCreation.get().run();
-        }
-        ctCreation.cancel(true);
-      }
-    }
   }
 
   @Override
@@ -95,24 +88,34 @@ public class ScriptImpl implements Script {
     return info;
   }
 
+  @SneakyThrows
+  @Override
+  public void cancel() {
+    synchronized (ctCreation) {
+      if(!ctCreation.isCancelled()) {
+        if (ctCreation.isDone()) {
+          ctCreation.get().run();
+        }
+        ctCreation.cancel(true);
+      }
+    }
+  }
 
-  @Running
-  @Timed(value = "running_time")
   private void execute() {
     setStart();
     try (Context context = createContext()) {
       checkCancelAndComplete(context);
       context.eval(lang, new String(source));
-      setEnd(ExecStatus.DONE);
+      setEnd(ScriptStatus.DONE);
     } catch (PolyglotException ex) {
       if (ex.isCancelled()) {
-        setEnd(ExecStatus.CANCELLED);
+        setEnd(ScriptStatus.CANCELLED);
       } else {
         setEndWithException(ex.getMessage(),
               getGuestStackTrace(ex.getPolyglotStackTrace()));
       }
     } catch (IllegalStateException ex) {
-      setEnd(ExecStatus.CANCELLED);
+      setEnd(ScriptStatus.CANCELLED);
     }
   }
 
@@ -128,12 +131,12 @@ public class ScriptImpl implements Script {
 
   private void setStart() {
     lock.writeLock().lock();
-    status = ExecStatus.RUNNING;
+    status = ScriptStatus.RUNNING;
     startTime = ZonedDateTime.now(timeZone.toZoneId());
     lock.writeLock().unlock();
   }
 
-  private void setEnd(ExecStatus eStatus) {
+  private void setEnd(ScriptStatus eStatus) {
     lock.writeLock().lock();
     status = eStatus;
     finishTime = ZonedDateTime.now(timeZone.toZoneId());
@@ -142,7 +145,7 @@ public class ScriptImpl implements Script {
 
   private void setEndWithException(String message, List<String> sTrace) {
     lock.writeLock().lock();
-    status = ExecStatus.DONE_WITH_EXCEPTION;
+    status = ScriptStatus.DONE_WITH_EXCEPTION;
     finishTime = ZonedDateTime.now(timeZone.toZoneId());
     exMessage = message;
     stackTrace = sTrace;

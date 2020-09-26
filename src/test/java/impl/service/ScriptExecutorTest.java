@@ -5,9 +5,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import impl.shared.ExecStatus;
+import impl.shared.ScriptStatus;
 import impl.repositories.entities.Script;
-import impl.service.exceptions.ExceptResException;
 import impl.service.exceptions.SyntaxErrorException;
 import java.io.ByteArrayOutputStream;
 import java.util.concurrent.CompletableFuture;
@@ -74,7 +73,7 @@ public class ScriptExecutorTest {
   }
 
   private void executeAsync(String script) {
-    AtomicReference<ExecStatus> status = new AtomicReference<>(ExecStatus.QUEUE);
+    AtomicReference<ScriptStatus> status = new AtomicReference<>(ScriptStatus.QUEUE);
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     CompletableFuture<Runnable> ctCreation = new CompletableFuture<>();
     CompletableFuture<Void> comp = executor.executeAsync(script, status, ctCreation, outputStream);
@@ -82,7 +81,7 @@ public class ScriptExecutorTest {
   }
 
   private void executeBlocking(String script) {
-    AtomicReference<ExecStatus> status = new AtomicReference<>(ExecStatus.QUEUE);
+    AtomicReference<ScriptStatus> status = new AtomicReference<>(ScriptStatus.QUEUE);
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     CompletableFuture<Runnable> ctCreation = new CompletableFuture<>();
     CompletableFuture<Void> comp = new CompletableFuture<>();
@@ -96,7 +95,7 @@ public class ScriptExecutorTest {
   public void shouldPassOnAsyncExec() {
     executeAsync(FINITE_SCRIPT);
     await(script);
-    assertEquals(ExecStatus.DONE.name(), getStatus(script));
+    assertEquals(ScriptStatus.DONE.name(), getStatus(script));
     assertEquals(FINITE_SCRIPT_RESULT, getOutput(script));
   }
 
@@ -114,7 +113,7 @@ public class ScriptExecutorTest {
     executeBlocking(FINITE_SCRIPT);
     assertTrue(script.getComputation().isDone() && ! script.getComputation().isCompletedExceptionally());
     assertEquals(FINITE_SCRIPT_RESULT, getOutput(script));
-    assertEquals(ExecStatus.DONE.name(), getStatus(script));
+    assertEquals(ScriptStatus.DONE.name(), getStatus(script));
   }
 
   @Test
@@ -132,7 +131,7 @@ public class ScriptExecutorTest {
     Thread.sleep(100);
     executor.cancelExec(script);
     await(script);
-    assertEquals(ExecStatus.CANCELLED.name(), getStatus(script));
+    assertEquals(ScriptStatus.CANCELLED.name(), getStatus(script));
   }
 
   @Test
@@ -142,7 +141,7 @@ public class ScriptExecutorTest {
     executor.cancelExec(script);
     await(script);
     executor.cancelExec(script);
-    assertEquals(ExecStatus.CANCELLED.name(), getStatus(script));
+    assertEquals(ScriptStatus.CANCELLED.name(), getStatus(script));
   }
 
   @Test
@@ -170,7 +169,7 @@ public class ScriptExecutorTest {
     pool.shutdown();
     pool.awaitTermination(30, TimeUnit.SECONDS);
     await(script);
-    assertEquals(ExecStatus.CANCELLED.name(), getStatus(script));
+    assertEquals(ScriptStatus.CANCELLED.name(), getStatus(script));
     assertEquals(0, successLatch.getCount());
   }
 
@@ -182,7 +181,7 @@ public class ScriptExecutorTest {
     executeAsync(INFINITE_SCRIPT);
     executor.cancelExec(script);
     executor.awaitTermination(script, 1, TimeUnit.MINUTES);
-    assertEquals(ExecStatus.CANCELLED.name(), getStatus(script));
+    assertEquals(ScriptStatus.CANCELLED.name(), getStatus(script));
   }
 
   @Test

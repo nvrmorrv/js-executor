@@ -8,6 +8,7 @@ spring:
         core-size: 8
         max-size: 8
         queue-capacity: 200
+      thread-name-prefix: "app"
   mvc:
     async:
       request-timeout: -1

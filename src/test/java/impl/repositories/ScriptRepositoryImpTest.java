@@ -5,7 +5,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import impl.repositories.entities.Script;
-import impl.shared.ExecStatus;
+import impl.shared.ScriptStatus;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 import java.util.Set;
@@ -25,7 +25,7 @@ public class ScriptRepositoryImpTest {
   private ScriptRepositoryImpl repo;
   private final Script Script = new Script(
         "script",
-        new AtomicReference<>(ExecStatus.QUEUE),
+        new AtomicReference<>(ScriptStatus.QUEUE),
         new ByteArrayOutputStream(),
         new CompletableFuture<>(),
         new CompletableFuture<>()

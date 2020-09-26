@@ -12,7 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import impl.shared.ExecStatus;
+import impl.shared.ScriptStatus;
 import impl.service.ScriptExecService;
 import impl.service.exceptions.DeletionException;
 import impl.service.exceptions.SyntaxErrorException;
@@ -40,9 +40,9 @@ public class ExecutorControllerTest {
   private final String EXEC_ID = "id";
   private final String SCRIPT = "console.log('hello')";
   private final QueueScriptInfo RESULT =
-        new QueueScriptInfo(ExecStatus.DONE.name(), Optional.empty());
+        new QueueScriptInfo(ScriptStatus.DONE.name(), Optional.empty());
   private final QueueScriptInfo EX_RESULT =
-        new QueueScriptInfo(ExecStatus.DONE_WITH_EXCEPTION.name(), Optional.of(""));
+        new QueueScriptInfo(ScriptStatus.DONE_WITH_EXCEPTION.name(), Optional.of(""));
   private final SyntaxErrorException SYN_ERR_EXCEPTION = new SyntaxErrorException("syntax error", "here");
 
   @Autowired
