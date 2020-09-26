@@ -20,8 +20,8 @@ import org.springframework.data.domain.Sort;
 
 public class PagingAndSortingService {
 
-  public static Page<ScriptInfo> getSortedPage(List<ScriptInfo> list, Pageable pageable, String status) {
-    List<ScriptInfo> sorted = sort(list, pageable.getSort(), status);
+  public static Page<ScriptInfo> getSortedPage(List<ScriptInfo> list, Pageable pageable, String filterStatus) {
+    List<ScriptInfo> sorted = sort(list, pageable.getSort(), filterStatus);
     return getPage(sorted, pageable);
   }
 
@@ -44,8 +44,8 @@ public class PagingAndSortingService {
           .collect(Collectors.toList());
   }
 
-  private static List<ScriptInfo> sort(List<ScriptInfo> list, Sort sort, String status) {
-    Predicate<ScriptInfo> statusFilter = getStatusPredicate(status);
+  private static List<ScriptInfo> sort(List<ScriptInfo> list, Sort sort, String filterStatus) {
+    Predicate<ScriptInfo> statusFilter = getStatusPredicate(filterStatus);
     Optional<Comparator<ScriptInfo>> comparator = sort.stream()
           .map(PagingAndSortingService::getComparator)
           .reduce(Comparator::thenComparing);

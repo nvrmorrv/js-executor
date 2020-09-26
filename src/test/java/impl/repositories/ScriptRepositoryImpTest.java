@@ -1,16 +1,12 @@
 package impl.repositories;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import impl.repositories.entities.Script;
-import impl.shared.ScriptStatus;
-import java.io.ByteArrayOutputStream;
-import java.util.Arrays;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.List;
 
 import impl.repositories.exceptions.UnknownIdException;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -23,13 +19,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class ScriptRepositoryImpTest {
   private ScriptRepositoryImpl repo;
-  private final Script Script = new Script(
-        "script",
-        new AtomicReference<>(ScriptStatus.QUEUE),
-        new ByteArrayOutputStream(),
-        new CompletableFuture<>(),
-        new CompletableFuture<>()
-  );
+  private final String SCRIPT_ID = "id";
+
+  @Mock
+  Script script;
 
   @Mock
   MeterRegistry registry;
@@ -40,39 +33,52 @@ public class ScriptRepositoryImpTest {
   }
 
   @Test
-  public void shouldPassOnAddingExec() {
-    String id = repo.addScript(Script);
-    Script exec = repo.getScript(id);
-    assertEquals(Script, exec);
+  public void shouldPassOnAddingScript() {
+    boolean created = repo.addOrUpdateScript(SCRIPT_ID, script);
+    Script resScript = repo.getScript(SCRIPT_ID);
+    assertTrue(created);
+    assertEquals(script, resScript);
   }
 
   @Test
-  public void shouldPassOnGettingExec() {
-    String id = repo.addScript(Script);
-    Script exec = repo.getScript(id);
-    assertEquals(Script, exec);
+  public void shouldPassOnUpdatingScript() {
+    boolean created = repo.addOrUpdateScript(SCRIPT_ID, script);
+    Script resScript = repo.getScript(SCRIPT_ID);
+    assertTrue(created);
+    assertEquals(script, resScript);
+    created = repo.addOrUpdateScript(SCRIPT_ID, script);
+    resScript = repo.getScript(SCRIPT_ID);
+    assertFalse(created);
+    assertEquals(script, resScript);
   }
 
   @Test
-  public void shouldFailOnGettingExecByUnknownId() {
+  public void shouldPassOnGettingScript() {
+    repo.addOrUpdateScript(SCRIPT_ID, script);
+    Script resScript = repo.getScript(SCRIPT_ID);
+    assertEquals(script, resScript);
+  }
+
+  @Test
+  public void shouldFailOnGettingScriptByUnknownId() {
     assertThatThrownBy(() -> repo.getScript("id"))
           .isInstanceOf(UnknownIdException.class)
           .hasMessage(UnknownIdException.generateMessage("id"));
   }
 
   @Test
-  public void shouldPassOnRemovingExec() {
-    String id = repo.addScript(Script);
-    Script exec = repo.getScript(id);
-    assertEquals(Script, exec);
-    repo.removeScript(id);
-    assertThatThrownBy(() -> repo.getScript(id))
+  public void shouldPassOnRemovingScript() {
+    repo.addOrUpdateScript(SCRIPT_ID, script);
+    Script resScript = repo.getScript(SCRIPT_ID);
+    assertEquals(script, resScript);
+    repo.removeScript(SCRIPT_ID);
+    assertThatThrownBy(() -> repo.getScript(SCRIPT_ID))
           .isInstanceOf(UnknownIdException.class)
-          .hasMessage(UnknownIdException.generateMessage(id));
+          .hasMessage(UnknownIdException.generateMessage(SCRIPT_ID));
   }
 
   @Test
-  public void shouldFailOnRemovingExecByUnknownId() {
+  public void shouldFailOnRemovingScriptByUnknownId() {
     assertThatThrownBy(() -> repo.getScript("id"))
           .isInstanceOf(UnknownIdException.class)
           .hasMessage(UnknownIdException.generateMessage("id"));
@@ -80,10 +86,11 @@ public class ScriptRepositoryImpTest {
 
   @Test
   public void shouldPassOnGettingAllExecIds() {
-    String id = repo.addScript(Script);
-    String id1 = repo.addScript(Script);
-    Set<String> ids = repo.getAllIds();
-    assertEquals(2, ids.size());
-    assertTrue(ids.containsAll(Arrays.asList(id, id1)));
+    repo.addOrUpdateScript(SCRIPT_ID, script);
+    repo.addOrUpdateScript(SCRIPT_ID + 1, script);
+    List<Script> scripts = repo.getScripts();
+    assertEquals(2, scripts.size());
+    assertEquals(script, scripts.get(0));
+    assertEquals(script, scripts.get(1));
   }
 }

@@ -7,230 +7,153 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import impl.repositories.ScriptRepository;
+import impl.shared.ScriptInfo;
 import impl.shared.ScriptStatus;
 import impl.repositories.entities.Script;
 import impl.service.exceptions.DeletionException;
-import impl.service.exceptions.SyntaxErrorException;
-import impl.repositories.exceptions.UnknownIdException;
 import java.io.ByteArrayOutputStream;
-import java.util.List;
+import java.io.OutputStream;
+import java.time.ZonedDateTime;
+import java.util.Collections;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.TimeZone;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
 public class ScriptExecServiceImplTest {
   private static ScriptExecServiceImpl service;
-  private final String SCRIPT = "console.log('hello')";
+  private final byte[] SOURCE = "console.log('hello')".getBytes();
   private final String SCRIPT_ID = "id";
-  private Script script;
-  private final SyntaxErrorException SYN_ERR_EXCEPTION = new SyntaxErrorException("", "");
-  private final ExceptResException EXCEPTION_RES_EXCEPTION = new ExceptResException("");
+  private final TimeZone TIME_ZONE = TimeZone.getDefault();
   private final ByteArrayOutputStream stream = new ByteArrayOutputStream();
 
   @Mock
-  public ScriptExecutor executor;
+  ScriptRepository repo;
 
   @Mock
-  public ScriptRepository repo;
+  Script mockScript;
+
+  @Captor
+  ArgumentCaptor<OutputStream> executeScriptCaptor;
 
   @BeforeEach
   public void setup() {
-    service = new ScriptExecServiceImpl(repo, executor);
-    script = new Script(
-          SCRIPT,
-          new AtomicReference<>(ScriptStatus.QUEUE),
-          new ByteArrayOutputStream(),
-          new CompletableFuture<>(),
-          new CompletableFuture<>()
-    );
+    service = new ScriptExecServiceImpl("js", repo);
   }
 
-  private String getStatus(Script exec) {
-    return exec.getStatus().get().name();
+  @Test
+  public void shouldPassOnCreatingScript() {
+    Mockito.when(repo.contains(SCRIPT_ID)).thenReturn(false);
+    Mockito.when(repo.addOrUpdateScript(Mockito.eq(SCRIPT_ID), Mockito.any())).thenReturn(true);
+    assertTrue(service.createScript(SCRIPT_ID, SOURCE, TIME_ZONE));
   }
 
-  private String getOutput(Script exec) {
-    return exec.getOutputStream().toString();
+  @Test
+  public void shouldPassOnUpdatingScript() {
+    Mockito.when(repo.contains(SCRIPT_ID)).thenReturn(true);
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(mockScript);
+    Mockito.when(mockScript.getStatus()).thenReturn(ScriptStatus.DONE);
+    Mockito.when(repo.addOrUpdateScript(Mockito.eq(SCRIPT_ID), Mockito.any())).thenReturn(false);
+    assertFalse(service.createScript(SCRIPT_ID, SOURCE, TIME_ZONE));
   }
 
-  //      executeScriptAsync
+  @Test
+  public void shouldFailOnUpdatingNotFinishedScript() {
+    Mockito.when(repo.contains(SCRIPT_ID)).thenReturn(true);
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(mockScript);
+    Mockito.when(mockScript.getStatus()).thenReturn(ScriptStatus.RUNNING);
+    assertThatThrownBy(() -> service.createScript(SCRIPT_ID, SOURCE, TIME_ZONE))
+          .isInstanceOf(DeletionException.class);
+  }
 
   @Test
   public void shouldPassOnAsyncExec() {
-    Mockito.when(repo.addScript(Mockito.any())).thenReturn(SCRIPT_ID);
-    assertEquals(SCRIPT_ID, service.executeScriptAsync(SCRIPT));
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(mockScript);
+    service.executeScriptAsync(SCRIPT_ID);
+    Mockito.verify(mockScript, Mockito.only()).executeScript();
   }
-
-  @Test
-  public void shouldFailOnAsyncExecWithSyntaxErrorScript() {
-    Mockito.doThrow(SYN_ERR_EXCEPTION).when(executor).checkScript(SCRIPT);
-    assertThatThrownBy(() -> service.executeScriptAsync(SCRIPT))
-          .isInstanceOf(SyntaxErrorException.class);
-  }
-
-  //    createExec
-
-  @Test
-  public void shouldPassOnCreatingExec() {
-    Mockito.when(repo.addScript(Mockito.any())).thenReturn(SCRIPT_ID);
-    service.createExec(SCRIPT, stream);
-    assertEquals(SCRIPT_ID, service.createExec(SCRIPT, stream));
-  }
-
-  @Test
-  public void shouldFailOnCreatingExecWithSyntaxError() {
-    Mockito.doThrow(SYN_ERR_EXCEPTION).when(executor).checkScript(SCRIPT);
-    assertThatThrownBy(() -> service.createExec(SCRIPT, stream))
-          .isInstanceOf(SyntaxErrorException.class);
-  }
-
-  //    executeScript
 
   @Test
   public void shouldPassOnBlockingExec() {
-    script.getStatus().set(ScriptStatus.CREATED);
-    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(script));
-    assertThatCode(() -> service.executeScript(SCRIPT_ID))
-          .doesNotThrowAnyException();
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(mockScript);
+    service.executeScript(SCRIPT_ID, stream);
+    Mockito.verify(mockScript, Mockito.only()).executeScript(executeScriptCaptor.capture());
+    assertEquals(stream, executeScriptCaptor.getValue());
   }
-
-  @Test
-  public void shouldFailOnBlockingExecWithNotCreatedStatus() {
-    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(script));
-    assertThatThrownBy(() -> service.executeScript(SCRIPT_ID))
-          .isInstanceOf(IllegalArgumentException.class);
-  }
-
-  //  cancelExecution
 
   @Test
   public void shouldPassOnCancellation() {
-    Mockito.when(repo.getScript(SCRIPT_ID))
-          .thenReturn(Optional.of(script));
-    assertThatCode(() -> service.cancelExecution(SCRIPT_ID))
-          .doesNotThrowAnyException();
-  }
-
-  @Test
-  public void shouldFailOnCancellationWithUnknownId() {
-    Mockito.when(repo.getScript(SCRIPT_ID)).
-          thenThrow(new UnknownIdException(SCRIPT_ID));
-    assertThatThrownBy(() -> service.getExecutionStatus(SCRIPT_ID))
-          .isInstanceOf(UnknownIdException.class)
-          .hasMessage(UnknownIdException.generateMessage(SCRIPT_ID));
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(mockScript);
+    service.cancelScriptExecution(SCRIPT_ID);
+    Mockito.verify(mockScript, Mockito.only()).cancelExecution();
   }
 
   //    deleteExecution
 
   @Test
-  public void shouldFailOnDeletionOfNotCancelledExec() {
-    Mockito.when(repo.getScript(SCRIPT_ID))
-          .thenReturn(Optional.of(script));
-    assertThatThrownBy(() -> service.deleteExecution(SCRIPT_ID))
-          .isInstanceOf(DeletionException.class)
-          .hasMessage(DeletionException.generateMessage(SCRIPT_ID));
+  public void shouldFailOnDeletionOfNotFinishedScript() {
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(mockScript);
+    Mockito.when(mockScript.getStatus()).thenReturn(ScriptStatus.RUNNING);
+    assertThatThrownBy(() -> service.deleteScript(SCRIPT_ID))
+          .isInstanceOf(DeletionException.class);
   }
 
   @Test
-  public void shouldPassOnDeletionOfFinishedExec() {
-    script.getComputation().complete(null);
-    Mockito.when(repo.getScript(SCRIPT_ID))
-          .thenReturn(Optional.of(script));
-    Mockito.when(repo.removeScript(SCRIPT_ID))
-          .thenReturn(Optional.of(script));
-    assertThatCode(() -> service.deleteExecution(SCRIPT_ID))
+  public void shouldPassOnDeletionOfFinishedScript() {
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(mockScript);
+    Mockito.when(mockScript.getStatus()).thenReturn(ScriptStatus.DONE);
+    assertThatCode(() -> service.deleteScript(SCRIPT_ID))
           .doesNotThrowAnyException();
   }
 
   @Test
-  public void shouldFailOnDeletionWithUnknownId() {
-    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.empty());
-    assertThatThrownBy(() -> service.deleteExecution("id"))
-          .isInstanceOf(UnknownIdException.class)
-          .hasMessage(UnknownIdException.generateMessage(SCRIPT_ID));
-  }
-
-  //    getExecutionStatus
-
-  @Test
-  public void shouldPassOnGettingStatus() {
-    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(script));
-    script.getComputation().complete(null);
-    script.getStatus().set(ScriptStatus.DONE);
-    QueueScriptInfo status = service.getExecutionStatus(SCRIPT_ID);
-    assertFalse(status.getMessage().isPresent());
-    assertEquals(getStatus(script), status.getStatus());
+  public void shouldPassOnGettingScriptOutput() {
+    byte[] output = new byte[0];
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(mockScript);
+    Mockito.when(mockScript.getOutput()).thenReturn(output);
+    assertEquals(output, service.getScriptOutput(SCRIPT_ID));
   }
 
   @Test
-  public void shouldPassOnGettingExceptionStatus() {
-    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(script));
-    script.getComputation().completeExceptionally(EXCEPTION_RES_EXCEPTION);
-    QueueScriptInfo status = service.getExecutionStatus(SCRIPT_ID);
-    assertTrue(status.getMessage().isPresent());
-    assertEquals(ScriptStatus.DONE_WITH_EXCEPTION.name(), status.getStatus());
+  public void shouldPassOnGettingScriptSource() {
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(mockScript);
+    Mockito.when(mockScript.getSource()).thenReturn(SOURCE);
+    assertEquals(SOURCE, service.getScriptSource(SCRIPT_ID));
   }
 
   @Test
-  public void shouldFailOnGettingStatusWithUnknownId() {
-    Mockito.when(repo.getScript(SCRIPT_ID)).
-          thenThrow(new UnknownIdException(SCRIPT_ID));
-    assertThatThrownBy(() -> service.getExecutionStatus(SCRIPT_ID))
-          .isInstanceOf(UnknownIdException.class)
-          .hasMessage(UnknownIdException.generateMessage(SCRIPT_ID));
-  }
-
-  //    getExecutionOutput
-
-  @Test
-  public void shouldPassOnGettingOutput() {
-    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(script));
-    String output = service.getExecutionOutput(SCRIPT_ID);
-    assertEquals(getOutput(script), output);
+  public void shouldPassOnGettingScriptInfo() {
+    ScriptInfo info = new ScriptInfo(SCRIPT_ID, ScriptStatus.RUNNING, ZonedDateTime.now(),
+          Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(mockScript);
+    Mockito.when(mockScript.getScriptInfo()).thenReturn(info);
+    assertEquals(info, service.getScriptInfo(SCRIPT_ID));
   }
 
   @Test
-  public void shouldFailOnGettingOutputWithUnknownId() {
-    Mockito.when(repo.getScript(SCRIPT_ID)).
-          thenThrow(new UnknownIdException(SCRIPT_ID));
-    assertThatThrownBy(() -> service.getExecutionOutput(SCRIPT_ID))
-          .isInstanceOf(UnknownIdException.class)
-          .hasMessage(UnknownIdException.generateMessage(SCRIPT_ID));
-  }
-
-  //    getExecutionScript
-
-  @Test
-  public void shouldPassOnGettingScript() {
-    Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(Optional.of(script));
-    String script = service.getExecutionScript(SCRIPT_ID);
-    assertEquals(this.script.getScriptSource(), script);
-  }
-
-  @Test
-  public void shouldFailOnGettingScriptWithUnknownId() {
-    Mockito.when(repo.getScript(SCRIPT_ID)).
-          thenThrow(new UnknownIdException(SCRIPT_ID));
-    assertThatThrownBy(() -> service.getExecutionScript(SCRIPT_ID))
-          .isInstanceOf(UnknownIdException.class)
-          .hasMessage(UnknownIdException.generateMessage(SCRIPT_ID));
-  }
-
-  //    getAllExecutionIds
-
-  @Test
-  public void shouldPassOnGettingExecIds() {
-    Mockito.when(repo.getAllIds()).thenReturn(Set.of(SCRIPT_ID));
-    List<String> list = service.getExecutionIds();
-    assertEquals(1, list.size());
-    assertEquals(SCRIPT_ID, list.get(0));
+  public void shouldPassOnGettingScriptInfoPage() {
+    int size = 1;
+    int page = 0;
+    Pageable pageable = PageRequest.of(page, size);
+    String filterStatus = "ANY";
+    ScriptInfo info = new ScriptInfo(SCRIPT_ID, ScriptStatus.RUNNING, ZonedDateTime.now(),
+          Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+    Mockito.when(repo.getScripts()).thenReturn(Collections.singletonList(mockScript));
+    Mockito.when(mockScript.getScriptInfo()).thenReturn(info);
+    Page<ScriptInfo> resPage = service.getScriptInfoPage(pageable, filterStatus);
+    assertEquals(1, resPage.getTotalElements());
+    assertEquals(1, resPage.getTotalPages());
+    assertEquals(size, resPage.getSize());
+    assertEquals(page, resPage.getNumber());
   }
 }

@@ -20,5 +20,5 @@ public interface Script {
 
   void executeScript();
 
-  void cancel();
+  void cancelExecution();
 }

@@ -12,7 +12,7 @@ import java.util.List;
 public class ExceptionStatusResp extends StatusResp {
   private final String id;
   private final String status;
-  private final String scheduledTime;
+  private final String createTime;
   private final String startTime;
   private final String finishTime;
   private final String message;

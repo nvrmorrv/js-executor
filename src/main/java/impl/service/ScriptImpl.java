@@ -42,7 +42,6 @@ public class ScriptImpl implements Script {
   private final CompletableFuture<Runnable> ctCreation = new CompletableFuture<>();
   private final String lang;
 
-
   public ScriptImpl(String lang, String id, byte[] source, TimeZone timeZone) {
     this.lang = lang;
     this.source = source;
@@ -90,7 +89,7 @@ public class ScriptImpl implements Script {
 
   @SneakyThrows
   @Override
-  public void cancel() {
+  public void cancelExecution() {
     synchronized (ctCreation) {
       if(!ctCreation.isCancelled()) {
         if (ctCreation.isDone()) {

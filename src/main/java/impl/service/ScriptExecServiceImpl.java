@@ -66,7 +66,7 @@ public class ScriptExecServiceImpl implements ScriptExecService{
 
   @Override
   public void cancelScriptExecution(String id) {
-    repo.getScript(id).cancel();
+    repo.getScript(id).cancelExecution();
   }
 
   @Override
@@ -80,7 +80,8 @@ public class ScriptExecServiceImpl implements ScriptExecService{
   @Override
   public Page<ScriptInfo> getScriptInfoPage(Pageable pageable, String filterStatus) {
     List<ScriptInfo> list = repo.getScripts().stream()
-          .map(Script::getScriptInfo).collect(Collectors.toList());
+          .map(Script::getScriptInfo)
+          .collect(Collectors.toList());
     return getSortedPage(list, pageable, filterStatus);
   }
 
