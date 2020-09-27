@@ -17,8 +17,8 @@ executor:
   lang: "js"
 
 springdoc:
-  api-docs:
-    enabled: true
+  swagger-ui:
+    url: "/openapi.json"
 
 management:
   endpoints:

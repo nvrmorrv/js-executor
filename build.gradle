@@ -43,6 +43,7 @@ dependencies {
     implementation 'org.zalando:problem-spring-web-starter:0.25.2'
     implementation 'org.graalvm.js:js:20.2.0'
     implementation 'org.springdoc:springdoc-openapi-ui:1.4.5'
+    implementation 'org.springdoc:springdoc-openapi-data-rest:1.4.5'
     implementation 'com.google.guava:guava:28.2-jre'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'

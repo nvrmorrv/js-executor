@@ -382,7 +382,7 @@ public class ExecutorControllerTest {
           delete("/scripts/" + SCRIPT_ID))
           .andExpect(status().is(405))
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-          .andExpect(jsonPath("$.title", Matchers.is("Attempt to delete running script")))
+          .andExpect(jsonPath("$.title", Matchers.is("Attempt to delete not finished script")))
           .andExpect(jsonPath("$.status", Matchers.is("METHOD_NOT_ALLOWED")))
           .andExpect(jsonPath("$.detail", Matchers.is(DeletionException.generateMessage(SCRIPT_ID))));
   }

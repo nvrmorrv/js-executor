@@ -61,6 +61,9 @@ public class PagingAndSortingService {
       case "id":
         comparator = Comparator.comparing(ScriptInfo::getId);
         break;
+      case "status":
+        comparator = Comparator.comparing(ScriptInfo::getStatus);
+        break;
       case "createTime":
         comparator = Comparator.comparing(ScriptInfo::getCreateTime);
         break;

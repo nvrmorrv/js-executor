@@ -21,9 +21,9 @@ public interface ScriptExecService {
 
   byte[] getScriptOutput(String id);
 
-  void cancelScriptExecution(String execId);
+  void cancelScriptExecution(String id);
 
-  void deleteScript(String execId);
+  void deleteScript(String id);
 
   Page<ScriptInfo> getScriptInfoPage(Pageable pageable, String filterStatus);
 }

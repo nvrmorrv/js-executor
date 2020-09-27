@@ -1,0 +1,923 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "OpenAPI definition",
+    "version": "v0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Generated server url"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": [
+          "JS executor"
+        ],
+        "summary": "Get root",
+        "operationId": "getRoot",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RootLinks"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InSerErrProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scripts/{id}": {
+      "get": {
+        "tags": [
+          "JS executor"
+        ],
+        "summary": "Get script",
+        "operationId": "getScript",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ExceptionScriptRespWithLinks"
+                    },
+                    {
+                      "$ref": "#/components/schemas/CommonScriptRespWithLinks"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error: unknown id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnknownIdProblem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InSerErrProblem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "JS executor"
+        ],
+        "summary": "Execute script",
+        "description": "You can create new script by id you pass or update existing one if it has finished execution. Also there are async and blocking requests which you can choose via 'blocking' parameter.The first one returns the execution id, the second immediately returns output in a streaming way.\n\nCAUTION: before trying out make sure that first media type value turned to '*/*' because it controls accept header of request",
+        "operationId": "executeScriptAsync",
+        "parameters": [
+          {
+            "name": "blocking",
+            "in": "query",
+            "description": "specifies execution type, is false by default",
+            "required": false,
+            "examples": {
+              "default": {
+                "description": "default"
+              },
+              "blocking request": {
+                "description": "blocking request",
+                "value": true
+              },
+              "async request": {
+                "description": "async request",
+                "value": false
+              }
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "script for executing",
+          "content": {
+            "text/plain": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Result of updating existing script",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScriptId"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Result of creation new script",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "path to created script resource"
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScriptId"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Syntax error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyntaxErrProblem"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Attempt to update not finished script",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionProblem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InSerErrProblem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "JS executor"
+        ],
+        "summary": "Delete script",
+        "operationId": "deleteScript",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error: unknown id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnknownIdProblem"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Error: attempt to delete not finished script",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionProblem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InSerErrProblem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "JS executor"
+        ],
+        "summary": "Cancel execution",
+        "operationId": "cancelExecution",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Passed status should be 'CANCELLED'",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelReq"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScriptId"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Passed status is not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonProblem"
+                },
+                "example": {
+                  "title" : "Passed status is not allowed",
+                  "status" : 400,
+                  "detail" : "Passed status should be CANCELLED"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error: unknown id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnknownIdProblem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InSerErrProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scripts/{id}/source": {
+      "get": {
+        "tags": [
+          "JS executor"
+        ],
+        "summary": "Get script source",
+        "description": "CAUTION: before trying out make sure that first media type value turned to '*/*' because it controls accept header of request",
+        "operationId": "getScriptSource",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error: unknown id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnknownIdProblem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InSerErrProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scripts/{id}/output": {
+      "get": {
+        "tags": [
+          "JS executor"
+        ],
+        "summary": "Get script output",
+        "description": "CAUTION: before trying out make sure that first media type value turned to '*/*' because it controls accept header of request",
+        "operationId": "getScriptOutput",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error: unknown id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnknownIdProblem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InSerErrProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scripts": {
+      "get": {
+        "tags": [
+          "JS executor"
+        ],
+        "summary": "Get scripts",
+        "description": "Allows pagination of list of script",
+        "operationId": "getScripts",
+        "parameters": [
+          {
+            "name": "size",
+            "in": "query",
+            "description": "Specifies page size, default value is 10",
+            "allowEmptyValue": true
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Specifies page, starting from 0, default value is 0",
+            "allowEmptyValue": true
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Specifies sort field in form [field, direction], default value is 'createTime,asc'",
+            "allowEmptyValue": true
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Specifies filter status, default value is 'ANY'. All available values are listed in the examples list",
+            "required": false,
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "string",
+              "default": "ANY"
+            },
+            "examples": {
+              "running": {
+                "description": "running",
+                "value": "RUNNING"
+              },
+              "done with exception": {
+                "description": "done with exception",
+                "value": "DONE_WITH_EXCEPTION"
+              },
+              "not finished": {
+                "description": "not finished",
+                "value": "NOT_FINISHED"
+              },
+              "cancelled": {
+                "description": "cancelled",
+                "value": "CANCELLED"
+              },
+              "default value": {
+                "description": "default value",
+                "value": "ANY"
+              },
+              "finished": {
+                "description": "finished",
+                "value": "FINISHED"
+              },
+              "done": {
+                "description": "done",
+                "value": "DONE"
+              },
+              "queue": {
+                "description": "queue",
+                "value": "QUEUE"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScriptsResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Pagination, sort parameters error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonProblem"
+                },
+                "example": {
+                  "title" : "Pagination error",
+                  "status" : 400,
+                  "detail" : "..."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InSerErrProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ScriptsResp" : {
+        "type": "object",
+        "properties": {
+          "_embedded" : {
+            "type": "object",
+            "properties": {
+              "scripts" : {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CommonScriptResp"
+                }
+              }
+            }
+          },
+          "_links": {
+            "type": "object",
+            "properties": {
+              "first" : {
+                "$ref": "#/components/schemas/CommonLink"
+              },
+              "prev" : {
+                "$ref": "#/components/schemas/CommonLink"
+              },
+              "self" : {
+                "$ref": "#/components/schemas/CommonLink"
+              },
+              "next" : {
+                "$ref": "#/components/schemas/CommonLink"
+              },
+              "last" : {
+                "$ref": "#/components/schemas/CommonLink"
+              },
+              "async" : {
+                "$ref": "#/components/schemas/TemplateAndMethodLink"
+              },
+              "blocking" : {
+                "$ref": "#/components/schemas/TemplateAndMethodLink"
+              }
+            }
+          },
+          "page" : {
+            "type": "object",
+            "properties": {
+              "size": {
+                "type": "integer"
+              },
+              "totalElements": {
+                "type": "integer"
+              },
+              "totalPages": {
+                "type": "integer"
+              },
+              "number": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "RootLinks": {
+        "type": "object",
+        "properties": {
+          "_links": {
+            "type": "object",
+            "properties": {
+              "scripts" : {
+                "$ref": "#/components/schemas/TemplateLink"
+              },
+              "self" : {
+                "$ref": "#/components/schemas/CommonLink"
+              }
+            }
+          }
+        }
+      },
+      "TemplateAndMethodLink": {
+        "type": "object",
+        "properties": {
+          "href": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "templated": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TemplateLink": {
+        "type": "object",
+        "properties": {
+          "href": {
+            "type": "string"
+          },
+          "templated": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CommonLink": {
+        "type": "object",
+        "properties": {
+          "href": {
+            "type": "string"
+          }
+        }
+      },
+      "MethodLink": {
+        "type": "object",
+        "properties": {
+          "href": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "CommonProblem": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      },
+      "UnknownIdProblem": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "title" : "Unknown id",
+          "status" : 404,
+          "detail" : "There is no such id, id: id"
+        }
+      },
+      "DeletionProblem": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "title" : "Attempt to delete not finished script",
+          "status" : 405,
+          "detail" : "To delete the script it should be done or canceled, id: id"
+        }
+      },
+      "InSerErrProblem": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "example": {
+          "title" : "Internal server error",
+          "status" : 500
+        }
+      },
+      "SyntaxErrProblem": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "section": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "title" : "Syntax error",
+          "status" : 400,
+          "detail" : "SyntaxError: ...",
+          "section" : "..."
+        }
+      },
+      "ExceptionScriptRespWithLinks": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "createTime": {
+            "type": "string"
+          },
+          "startTime": {
+            "type": "string"
+          },
+          "finishTime": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "stackTrace": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "_links": {
+            "$ref": "#/components/schemas/GetScriptLinks"
+          }
+        }
+      },
+      "CommonScriptResp": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "createTime": {
+            "type": "string"
+          },
+          "startTime": {
+            "type": "string"
+          },
+          "finishTime": {
+            "type": "string"
+          },
+          "_links": {
+            "type": "object",
+            "properties": {
+              "self": {
+                "$ref": "#/components/schemas/CommonLink"
+              }
+            }
+          }
+        }
+      },
+      "CommonScriptRespWithLinks": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "createTime": {
+            "type": "string"
+          },
+          "startTime": {
+            "type": "string"
+          },
+          "finishTime": {
+            "type": "string"
+          },
+          "_links": {
+            "$ref": "#/components/schemas/GetScriptLinks"
+          }
+        }
+      },
+      "GetScriptLinks": {
+        "type": "object",
+        "properties": {
+          "self" : {
+            "$ref": "#/components/schemas/CommonLink"
+          },
+          "cancel" : {
+            "$ref": "#/components/schemas/MethodLink"
+          },
+          "delete" : {
+            "$ref": "#/components/schemas/MethodLink"
+          },
+          "source" : {
+            "$ref": "#/components/schemas/CommonLink"
+          },
+          "output" : {
+            "$ref": "#/components/schemas/CommonLink"
+          },
+          "async" : {
+            "$ref": "#/components/schemas/TemplateAndMethodLink"
+          },
+          "blocking" : {
+            "$ref": "#/components/schemas/TemplateAndMethodLink"
+          }
+        }
+      },
+      "ScriptId": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "_links": {
+            "type": "object",
+            "properties": {
+              "self": {
+                "$ref": "#/components/schemas/CommonLink"
+              }
+            }
+          }
+        }
+      },
+      "CancelReq": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

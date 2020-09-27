@@ -1,7 +1,7 @@
 package impl.controllers.utils;
 
-import impl.controllers.dto.CommonStatusResp;
-import impl.controllers.dto.ExceptionStatusResp;
+import impl.controllers.dto.CommonScriptResp;
+import impl.controllers.dto.ExceptionScriptResp;
 import impl.shared.ScriptInfo;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -11,8 +11,8 @@ import java.util.Optional;
 public class ResponseMapper {
   private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss:SSS;dd-MM-uuuu;O");
 
-  public static CommonStatusResp getCommonStatusResp(ScriptInfo info) {
-    return new CommonStatusResp(
+  public static CommonScriptResp getCommonStatusResp(ScriptInfo info) {
+    return new CommonScriptResp(
           info.getId(),
           info.getStatus().name(),
           info.getCreateTime().format(formatter),
@@ -20,8 +20,8 @@ public class ResponseMapper {
           getStringFromDate(info.getFinishTime()));
   }
 
-  public static ExceptionStatusResp getExceptionStatusResp(ScriptInfo info) {
-    return new ExceptionStatusResp(
+  public static ExceptionScriptResp getExceptionStatusResp(ScriptInfo info) {
+    return new ExceptionScriptResp(
           info.getId(),
           info.getStatus().name(),
           info.getCreateTime().format(formatter),

@@ -78,7 +78,7 @@ public class ExecutorControllerAdvise {
   @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
   public Problem response(DeletionException ex) {
     return Problem.builder()
-     .withTitle("Attempt to delete running script")
+     .withTitle("Attempt to delete not finished script")
      .withStatus(Status.METHOD_NOT_ALLOWED)
      .withDetail(ex.getMessage())
      .build();

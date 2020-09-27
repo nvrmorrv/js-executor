@@ -70,11 +70,11 @@ public class ScriptExecServiceImpl implements ScriptExecService{
   }
 
   @Override
-  public synchronized void deleteScript(String execId) {
-    if(isNotFinished(repo.getScript(execId).getStatus())) {
-      throw new DeletionException(execId);
+  public synchronized void deleteScript(String id) {
+    if(isNotFinished(repo.getScript(id).getStatus())) {
+      throw new DeletionException(id);
     }
-    repo.removeScript(execId);
+    repo.removeScript(id);
   }
 
   @Override

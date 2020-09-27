@@ -6,14 +6,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 import static org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder.fromController;
 
-import impl.controllers.doc.CancelExecApiEndpoint;
-import impl.controllers.doc.DeleteExecApiEndpoint;
-import impl.controllers.doc.ExecuteScriptApiEndpoint;
-import impl.controllers.doc.GetExecListApiEndpoint;
-import impl.controllers.doc.GetExecOutputApiEndpoint;
-import impl.controllers.doc.GetExecScriptApiEndpoint;
-import impl.controllers.doc.GetExecStatusApiEndpoint;
-import impl.controllers.doc.GetRootApiEndpoint;
 import impl.controllers.dto.*;
 import impl.controllers.exceptions.CancellationException;
 import impl.controllers.utils.CommonStatusRespAssembler;
@@ -28,7 +20,6 @@ import java.util.TimeZone;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.CollectionModel;
@@ -41,6 +32,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 @RestController
 @Tag(name = "JS executor")
+@Hidden
 @AllArgsConstructor
 public class ExecutorController {
   private final ScriptExecService service;
@@ -48,7 +40,6 @@ public class ExecutorController {
         new CommonStatusRespAssembler(id -> linkTo(methodOn(getClass()).getScript(id)).withSelfRel());
 
   @GetMapping("/")
-  @GetRootApiEndpoint
   public ResponseEntity<CollectionModel<?>> getRoot() {
     return ResponseEntity.ok()
           .contentType(MediaType.APPLICATION_JSON)
@@ -59,14 +50,13 @@ public class ExecutorController {
   }
 
   @GetMapping("/scripts")
-  @GetExecListApiEndpoint
-  public ResponseEntity<PagedModel<CommonStatusResp>> getScripts(
+  public ResponseEntity<PagedModel<CommonScriptResp>> getScripts(
         @RequestParam(value = "status", required = false, defaultValue = "ANY") String filterStatus,
         @PageableDefault(sort = "createTime") Pageable pageable,
         PagedResourcesAssembler<ScriptInfo> pagedResourcesAssembler) {
     Page<ScriptInfo> page = service.getScriptInfoPage(pageable, filterStatus);
     Link selfLink = linkTo(methodOn(getClass()).getScripts(filterStatus, pageable, pagedResourcesAssembler)).withSelfRel();
-    PagedModel<CommonStatusResp> pagedModel = pagedResourcesAssembler.toModel(page, respAssembler, selfLink);
+    PagedModel<CommonScriptResp> pagedModel = pagedResourcesAssembler.toModel(page, respAssembler, selfLink);
     pagedModel.add(getAsyncExecLink("{id}"), getBlockExecLink("{id}"));
     return ResponseEntity.ok()
           .contentType(MediaType.APPLICATION_JSON)
@@ -77,7 +67,6 @@ public class ExecutorController {
         path = "/scripts/{id}",
         params = "blocking=false",
         consumes = MediaType.TEXT_PLAIN_VALUE)
-  @ExecuteScriptApiEndpoint
   public ResponseEntity<ScriptId> executeScriptAsync(@PathVariable(name = "id") String scriptId,
                                                      @RequestBody byte[] body,
                                                      TimeZone timeZone) {
@@ -96,7 +85,6 @@ public class ExecutorController {
   @PutMapping(
         path = "/scripts/{id}",
         consumes = MediaType.TEXT_PLAIN_VALUE)
-  @Hidden
   public ResponseEntity<ScriptId> executeScriptAsyncByDefault(@PathVariable(name = "id") String scriptId,
                                                               @RequestBody byte[] body,
                                                               TimeZone timeZone) {
@@ -107,7 +95,6 @@ public class ExecutorController {
         path = "/scripts/{id}",
         params = "blocking=true",
         consumes = MediaType.TEXT_PLAIN_VALUE)
-  @Hidden
   public ResponseEntity<StreamingResponseBody> executeScriptWithBlocking(@PathVariable(name = "id") String scriptId,
                                                                          @RequestBody byte[] body,
                                                                          TimeZone timeZone) {
@@ -123,10 +110,9 @@ public class ExecutorController {
   }
 
   @GetMapping("/scripts/{id}")
-  @GetExecStatusApiEndpoint
-  public ResponseEntity<StatusResp> getScript(@PathVariable(name = "id") String scriptId) {
+  public ResponseEntity<ScriptResp> getScript(@PathVariable(name = "id") String scriptId) {
     ScriptInfo info = service.getScriptInfo(scriptId);
-    StatusResp resp = getStatusResp(info);
+    ScriptResp resp = getStatusResp(info);
     resp.add(linkTo(methodOn(ExecutorController.class).getScript(scriptId)).withSelfRel());
     resp.add(linkTo(methodOn(ExecutorController.class).cancelExecution(null, scriptId)).withRel("cancel").withType("PATCH"));
     resp.add(linkTo(methodOn(ExecutorController.class).deleteScript(scriptId)).withRel("delete").withType("DELETE"));
@@ -138,7 +124,6 @@ public class ExecutorController {
   }
 
   @PatchMapping("/scripts/{id}")
-  @CancelExecApiEndpoint
   public ResponseEntity<ScriptId> cancelExecution(@RequestBody CancelReq req,
                                                   @PathVariable(name = "id") String scriptId) {
     if(!req.getStatus().equals(ScriptStatus.CANCELLED.name())){
@@ -151,20 +136,17 @@ public class ExecutorController {
   }
 
   @DeleteMapping("/scripts/{id}")
-  @DeleteExecApiEndpoint
   public ResponseEntity<?> deleteScript(@PathVariable(name = "id") String scriptId) {
     service.deleteScript(scriptId);
     return ResponseEntity.noContent().build();
   }
 
   @GetMapping("/scripts/{id}/source")
-  @GetExecScriptApiEndpoint
   public ResponseEntity<byte[]> getScriptSource(@PathVariable(name = "id") String scriptId) {
     return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(service.getScriptSource(scriptId));
   }
 
   @GetMapping("/scripts/{id}/output")
-  @GetExecOutputApiEndpoint
   public ResponseEntity<byte[]> getScriptOutput(@PathVariable(name = "id") String scriptId) {
     return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(service.getScriptOutput(scriptId));
   }
@@ -185,7 +167,7 @@ public class ExecutorController {
           .withType("PUT");
   }
 
-  private StatusResp getStatusResp(ScriptInfo info) {
+  private ScriptResp getStatusResp(ScriptInfo info) {
     if (info.getStatus() != ScriptStatus.DONE_WITH_EXCEPTION) {
       return getCommonStatusResp(info);
     } else {
