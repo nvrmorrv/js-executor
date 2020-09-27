@@ -27,15 +27,14 @@ public class PagingAndSortingService {
 
   private static Page<ScriptInfo> getPage(List<ScriptInfo> list, Pageable pageable) {
     int pageNumber = pageable.getPageNumber();
-    int pageSize = (pageable.getPageSize() > 0 && pageable.getPageSize() < list.size())
-          ? pageable.getPageSize() : list.size();
+    int pageSize = Math.min(pageable.getPageSize(), list.size());
     List<List<ScriptInfo>> pages = getPageLists(list, pageSize);
     return (pageNumber > pages.size() - 1)
           ? new PageImpl<>(Collections.emptyList(), pageable, list.size())
           : new PageImpl<>(pages.get(pageNumber), pageable, list.size());
   }
 
-  public static List<List<ScriptInfo>> getPageLists(List<ScriptInfo> list, int pageSize) {
+  private static List<List<ScriptInfo>> getPageLists(List<ScriptInfo> list, int pageSize) {
     int numPages = (int) Math.ceil((double)list.size() / (double)pageSize);
     return IntStream.range(0, numPages)
           .mapToObj(pageNum ->
