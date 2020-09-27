@@ -541,14 +541,14 @@
             }
           },
           "400": {
-            "description": "Pagination, sort parameters error",
+            "description": "Sort parameters error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CommonProblem"
                 },
                 "example": {
-                  "title" : "Pagination error",
+                  "title" : "Sort parameters error",
                   "status" : 400,
                   "detail" : "..."
                 }

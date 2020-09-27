@@ -1,11 +1,11 @@
 package impl.service;
 
-import impl.service.exceptions.PaginationException;
 import impl.shared.ScriptInfo;
 import impl.service.exceptions.SortParametersException;
 import impl.shared.ScriptStatus;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -30,10 +30,9 @@ public class PagingAndSortingService {
     int pageSize = (pageable.getPageSize() > 0 && pageable.getPageSize() < list.size())
           ? pageable.getPageSize() : list.size();
     List<List<ScriptInfo>> pages = getPageLists(list, pageSize);
-    if(pageNumber > pages.size() - 1) {
-      throw new PaginationException("Requested page does not exist");
-    }
-    return new PageImpl<>(pages.get(pageNumber), pageable, list.size());
+    return (pageNumber > pages.size() - 1)
+          ? new PageImpl<>(Collections.emptyList(), pageable, list.size())
+          : new PageImpl<>(pages.get(pageNumber), pageable, list.size());
   }
 
   public static List<List<ScriptInfo>> getPageLists(List<ScriptInfo> list, int pageSize) {

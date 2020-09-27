@@ -43,16 +43,6 @@ public class ExecutorControllerAdvise {
           .build();
   }
 
-  @ExceptionHandler(PaginationException.class)
-  @ResponseStatus(HttpStatus.BAD_REQUEST)
-  public Problem response(PaginationException ex) {
-    return Problem.builder()
-          .withTitle("Pagination parameters error")
-          .withStatus(Status.BAD_REQUEST)
-          .withDetail(ex.getMessage())
-          .build();
-  }
-
   @ExceptionHandler(CancellationException.class)
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   public Problem response(CancellationException ex) {
@@ -62,7 +52,6 @@ public class ExecutorControllerAdvise {
           .withDetail(ex.getMessage())
           .build();
   }
-
 
   @ExceptionHandler(UnknownIdException.class)
   @ResponseStatus(HttpStatus.NOT_FOUND)

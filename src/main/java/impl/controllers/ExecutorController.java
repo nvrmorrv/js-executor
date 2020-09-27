@@ -16,10 +16,13 @@ import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.CollectionModel;
@@ -55,7 +58,13 @@ public class ExecutorController {
         @PageableDefault(sort = "createTime") Pageable pageable,
         PagedResourcesAssembler<ScriptInfo> pagedResourcesAssembler) {
     Page<ScriptInfo> page = service.getScriptInfoPage(pageable, filterStatus);
-    Link selfLink = linkTo(methodOn(getClass()).getScripts(filterStatus, pageable, pagedResourcesAssembler)).withSelfRel();
+    Link selfLink = Link.of(fromController(getClass())
+          .path("/scripts")
+          .queryParam("status", filterStatus)
+          .queryParam("page", pageable.getPageNumber())
+          .queryParam("size", pageable.getPageSize())
+          .queryParam("sort", getPageableSortValues(pageable.getSort()))
+          .build().toString()).withSelfRel();
     PagedModel<CommonScriptResp> pagedModel = pagedResourcesAssembler.toModel(page, respAssembler, selfLink);
     pagedModel.add(getAsyncExecLink("{id}"), getBlockExecLink("{id}"));
     return ResponseEntity.ok()
@@ -165,6 +174,14 @@ public class ExecutorController {
           .queryParam("blocking", "false")
           .build().toString(), "async")
           .withType("PUT");
+  }
+
+  private List<String> getPageableSortValues(Sort sort) {
+    return sort.stream()
+          .map(order -> (order.isAscending())
+                ? order.getProperty() + ",asc"
+                : order.getProperty() + ",desc")
+          .collect(Collectors.toList());
   }
 
   private ScriptResp getStatusResp(ScriptInfo info) {
