@@ -1,11 +1,9 @@
 package impl.service;
 
-import impl.aspects.annotations.Running;
 import impl.repositories.entities.Script;
 import impl.shared.ScriptInfo;
 import impl.shared.ScriptStatus;
 import impl.service.exceptions.SyntaxErrorException;
-import io.micrometer.core.annotation.Timed;
 
 import java.io.OutputStream;
 import java.time.ZonedDateTime;
@@ -51,16 +49,12 @@ public class ScriptImpl implements Script {
     this.createTime = ZonedDateTime.now(timeZone.toZoneId());
   }
 
-  @Running
-  @Timed(value = "running_time")
   @Override
   public void executeScript() {
     this.outputStream = new ByteArrayOutputStream();
     execute();
   }
 
-  @Running
-  @Timed(value = "running_time")
   @Override
   public void executeScript(OutputStream stream) {
     this.outputStream = new OutputStreamWrapper(stream);

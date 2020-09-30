@@ -11,6 +11,7 @@ import impl.shared.ScriptInfo;
 import impl.shared.ScriptStatus;
 import impl.repositories.entities.Script;
 import impl.service.exceptions.DeletionException;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.time.ZonedDateTime;
@@ -42,6 +43,9 @@ public class ScriptExecServiceImplTest {
 
   @Mock
   Script mockScript;
+
+  @Mock
+  MeterRegistry meterRegistry;
 
   @Captor
   ArgumentCaptor<OutputStream> executeScriptCaptor;

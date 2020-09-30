@@ -13,9 +13,11 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.TimeZone;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableAsync
+@EnableScheduling
 public class App {
   public static void main(String[] args) {
     SpringApplication.run(App.class, args);

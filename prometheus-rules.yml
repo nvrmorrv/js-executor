@@ -1,0 +1,10 @@
+groups:
+  - name: "js-executor"
+    interval: 2s
+    rules:
+      - record: js-executor:request_count:rate
+        expr: rate(http_server_requests_seconds_count{uri!="/actuator/prometheus"}[5m])
+      - record: js-executor:running_time:sum
+        expr: sum (running_time_seconds_sum)
+      - record: js-executor:running_time:max
+        expr: running_time_seconds_sum{method="executeScript"} + running_time_seconds_sum{method="executeScriptAsync"}
