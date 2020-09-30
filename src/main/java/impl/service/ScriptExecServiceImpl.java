@@ -8,7 +8,8 @@ import impl.shared.ScriptStatus;
 import impl.service.exceptions.DeletionException;
 
 import impl.shared.ScriptInfo;
-import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.LongTaskTimer;
+
 import java.io.OutputStream;
 import java.util.List;
 import java.util.TimeZone;
@@ -26,14 +27,14 @@ import org.springframework.stereotype.Service;
 public class ScriptExecServiceImpl implements ScriptExecService{
   private final String lang;
   private final ScriptRepository repo;
-  private final Timer timer;
+  private final LongTaskTimer scriptExecutionTimer;
 
   public ScriptExecServiceImpl(@Value("${executor.lang}") String lang,
                                ScriptRepository repo,
-                               Timer timer) {
+                               LongTaskTimer scriptExecutionTimer) {
     this.lang = lang;
     this.repo = repo;
-    this.timer = timer;
+    this.scriptExecutionTimer = scriptExecutionTimer;
   }
 
   @Override
@@ -46,14 +47,18 @@ public class ScriptExecServiceImpl implements ScriptExecService{
   @Override
   public void executeScript(String id, OutputStream outputStream) {
     Script script = repo.getScript(id);
-    timer.record(() -> script.executeScript(outputStream));
+    LongTaskTimer.Sample sample = scriptExecutionTimer.start();
+    script.executeScript(outputStream);
+    sample.stop();
   }
 
   @Async
   @Override
   public void executeScriptAsync(String id) {
     Script script = repo.getScript(id);
-    timer.record((Runnable) script::executeScript);
+    LongTaskTimer.Sample sample = scriptExecutionTimer.start();
+    script.executeScript();
+    sample.stop();
   }
 
   @Override

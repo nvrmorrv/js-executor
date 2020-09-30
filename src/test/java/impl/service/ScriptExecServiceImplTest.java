@@ -11,6 +11,7 @@ import impl.shared.ScriptInfo;
 import impl.shared.ScriptStatus;
 import impl.repositories.entities.Script;
 import impl.service.exceptions.DeletionException;
+import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
@@ -45,14 +46,14 @@ public class ScriptExecServiceImplTest {
   Script mockScript;
 
   @Mock
-  MeterRegistry meterRegistry;
+  LongTaskTimer taskTimer;
 
   @Captor
   ArgumentCaptor<OutputStream> executeScriptCaptor;
 
   @BeforeEach
   public void setup() {
-    service = new ScriptExecServiceImpl("js", repo);
+    service = new ScriptExecServiceImpl("js", repo, taskTimer);
   }
 
   @Test
@@ -82,6 +83,7 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldPassOnAsyncExec() {
+    Mockito.when(taskTimer.start()).thenReturn(Mockito.mock(LongTaskTimer.Sample.class));
     Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(mockScript);
     service.executeScriptAsync(SCRIPT_ID);
     Mockito.verify(mockScript, Mockito.only()).executeScript();
@@ -89,6 +91,7 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldPassOnBlockingExec() {
+    Mockito.when(taskTimer.start()).thenReturn(Mockito.mock(LongTaskTimer.Sample.class));
     Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(mockScript);
     service.executeScript(SCRIPT_ID, stream);
     Mockito.verify(mockScript, Mockito.only()).executeScript(executeScriptCaptor.capture());

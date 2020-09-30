@@ -2,7 +2,6 @@ package impl.controllers;
 
 import impl.controllers.exceptions.CancellationException;
 import impl.service.exceptions.DeletionException;
-import impl.service.exceptions.PaginationException;
 import impl.service.exceptions.SortParametersException;
 import impl.service.exceptions.SyntaxErrorException;
 import impl.repositories.exceptions.UnknownIdException;
