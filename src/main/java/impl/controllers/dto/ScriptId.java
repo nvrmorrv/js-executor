@@ -3,7 +3,6 @@ package impl.controllers.dto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.hateoas.RepresentationModel;
-import org.springframework.hateoas.server.core.Relation;
 
 @AllArgsConstructor
 @Getter

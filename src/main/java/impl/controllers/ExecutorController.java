@@ -35,7 +35,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 @AllArgsConstructor
 public class ExecutorController {
   private final ScriptExecService service;
-  private final CommonStatusRespAssembler respAssembler =
+  private final CommonStatusRespAssembler commonStatusRespAssembler =
         new CommonStatusRespAssembler(id -> linkTo(methodOn(getClass()).getScript(id)).withSelfRel());
 
   @GetMapping("/")
@@ -61,7 +61,7 @@ public class ExecutorController {
           .queryParam("size", pageable.getPageSize())
           .queryParam("sort", getPageableSortValues(pageable.getSort()))
           .build().toString()).withSelfRel();
-    PagedModel<CommonScriptResp> pagedModel = pagedResourcesAssembler.toModel(page, respAssembler, selfLink);
+    PagedModel<CommonScriptResp> pagedModel = pagedResourcesAssembler.toModel(page, commonStatusRespAssembler, selfLink);
     pagedModel.add(getAsyncExecLink("{id}"), getBlockExecLink("{id}"));
     return ResponseEntity.ok()
           .contentType(MediaType.APPLICATION_JSON)

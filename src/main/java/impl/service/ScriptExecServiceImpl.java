@@ -5,12 +5,8 @@ import static impl.service.PagingAndSortingService.getSortedPage;
 import impl.repositories.ScriptRepository;
 import impl.repositories.entities.Script;
 import impl.shared.ScriptStatus;
-import impl.service.exceptions.DeletionException;
-
 import impl.shared.ScriptInfo;
-import io.micrometer.core.instrument.LongTaskTimer;
-
-import io.micrometer.core.instrument.MeterRegistry;
+import impl.service.exceptions.DeletionException;
 import io.micrometer.core.instrument.Timer;
 import java.io.OutputStream;
 import java.util.List;
@@ -41,9 +37,9 @@ public class ScriptExecServiceImpl implements ScriptExecService {
   }
 
   @Override
-  public synchronized boolean createScript(String id, byte[] scriptText, TimeZone timeZone) {
+  public synchronized boolean createScript(String id, byte[] source, TimeZone timeZone) {
     checkScriptForCompleteness(id);
-    Script script = new ScriptImpl(lang, id, scriptText, timeZone);
+    Script script = new ScriptImpl(lang, id, source, timeZone);
     return repo.addOrUpdateScript(id, script);
   }
 

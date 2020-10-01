@@ -19,6 +19,7 @@ executor:
 springdoc:
   swagger-ui:
     url: "/openapi.json"
+    path: "/swagger-doc"
 
 management:
   endpoints:
