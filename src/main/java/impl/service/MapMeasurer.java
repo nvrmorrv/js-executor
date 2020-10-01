@@ -11,7 +11,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ScriptMeasurer {
+public class MapMeasurer {
   private final ScriptRepository repo;
   private final AtomicInteger queueGauge = new AtomicInteger(0);
   private final AtomicInteger runningGauge = new AtomicInteger(0);
@@ -19,9 +19,9 @@ public class ScriptMeasurer {
   private final AtomicInteger doneGauge = new AtomicInteger(0);
   private final AtomicInteger doneWithExceptionGauge = new AtomicInteger(0);
 
-  public ScriptMeasurer(MeterRegistry meterRegistry, ScriptRepository repo) {
+  public MapMeasurer(MeterRegistry meterRegistry, ScriptRepository repo) {
     this.repo = repo;
-    String metricName = "script_status_gauge";
+    String metricName = "script_number";
     meterRegistry.gauge(metricName, Tags.of("status", ScriptStatus.QUEUE.name()), queueGauge);
     meterRegistry.gauge(metricName, Tags.of("status", ScriptStatus.RUNNING.name()), runningGauge);
     meterRegistry.gauge(metricName, Tags.of("status", ScriptStatus.CANCELLED.name()), cancelledGauge);

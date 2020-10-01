@@ -12,7 +12,7 @@ import impl.shared.ScriptStatus;
 import impl.repositories.entities.Script;
 import impl.service.exceptions.DeletionException;
 import io.micrometer.core.instrument.LongTaskTimer;
-import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.time.ZonedDateTime;
@@ -46,14 +46,11 @@ public class ScriptExecServiceImplTest {
   Script mockScript;
 
   @Mock
-  LongTaskTimer taskTimer;
-
-  @Captor
-  ArgumentCaptor<OutputStream> executeScriptCaptor;
+  Timer timer;
 
   @BeforeEach
   public void setup() {
-    service = new ScriptExecServiceImpl("js", repo, taskTimer);
+    service = new ScriptExecServiceImpl("js", repo, timer);
   }
 
   @Test
@@ -83,19 +80,16 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldPassOnAsyncExec() {
-    Mockito.when(taskTimer.start()).thenReturn(Mockito.mock(LongTaskTimer.Sample.class));
     Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(mockScript);
-    service.executeScriptAsync(SCRIPT_ID);
-    Mockito.verify(mockScript, Mockito.only()).executeScript();
+    assertThatCode(() -> service.executeScriptAsync(SCRIPT_ID))
+          .doesNotThrowAnyException();
   }
 
   @Test
   public void shouldPassOnBlockingExec() {
-    Mockito.when(taskTimer.start()).thenReturn(Mockito.mock(LongTaskTimer.Sample.class));
     Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(mockScript);
-    service.executeScript(SCRIPT_ID, stream);
-    Mockito.verify(mockScript, Mockito.only()).executeScript(executeScriptCaptor.capture());
-    assertEquals(stream, executeScriptCaptor.getValue());
+    assertThatCode(() -> service.executeScript(SCRIPT_ID, stream))
+          .doesNotThrowAnyException();
   }
 
   @Test

@@ -2,9 +2,11 @@ groups:
   - name: "js-executor"
     interval: 2s
     rules:
-      - record: js-executor:request_count:rate
+      - record: js_executor:request_count:rate
         expr: rate(http_server_requests_seconds_count{uri!="/actuator/prometheus"}[5m])
-      - record: js-executor:running_time:sum
-        expr: sum (running_time_seconds_sum)
-      - record: js-executor:running_time:max
-        expr: running_time_seconds_sum{method="executeScript"} + running_time_seconds_sum{method="executeScriptAsync"}
+      - record: js_executor:total_running_time:rate
+        expr: rate(running_time_seconds_sum[5m])
+      - record: js_executor:map_size:avg
+        expr: avg_over_time (map_size[5m])
+      - record: js_executor:script_number:avg
+        expr: avg_over_time (script_number[5m])

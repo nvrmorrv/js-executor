@@ -1,6 +1,7 @@
 package impl.configs;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.util.concurrent.AtomicDouble;
 import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -39,11 +40,12 @@ public class AppConfig {
   }
 
   @Bean
-  public LongTaskTimer longTaskTimer(MeterRegistry registry) {
-    return LongTaskTimer.builder("running_time")
+  public Timer timer(MeterRegistry registry) {
+    Timer timer = Timer.builder("running_time")
           .publishPercentiles(0)
           .distributionStatisticExpiry(Duration.of(1, ChronoUnit.HALF_DAYS))
           .register(registry);
+    registry.gauge("running_time_mean", timer, t -> t.mean(t.baseTimeUnit()));
+    return timer;
   }
-
 }
