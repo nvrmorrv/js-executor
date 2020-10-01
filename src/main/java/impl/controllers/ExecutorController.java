@@ -12,8 +12,6 @@ import impl.controllers.utils.CommonStatusRespAssembler;
 import impl.service.ScriptExecService;
 import impl.shared.ScriptInfo;
 import impl.shared.ScriptStatus;
-import io.swagger.v3.oas.annotations.Hidden;
-import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.Collections;
 import java.util.List;
@@ -34,8 +32,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 @RestController
-@Tag(name = "JS executor")
-@Hidden
 @AllArgsConstructor
 public class ExecutorController {
   private final ScriptExecService service;
@@ -77,9 +73,9 @@ public class ExecutorController {
         params = "blocking=false",
         consumes = MediaType.TEXT_PLAIN_VALUE)
   public ResponseEntity<ScriptId> executeScriptAsync(@PathVariable(name = "id") String scriptId,
-                                                     @RequestBody byte[] body,
+                                                     @RequestBody byte[] source,
                                                      TimeZone timeZone) {
-    boolean created = service.createScript(scriptId, body, timeZone);
+    boolean created = service.createScript(scriptId, source, timeZone);
     service.executeScriptAsync(scriptId);
     ScriptId resp = getScriptId(scriptId);
     return (created)
@@ -95,9 +91,9 @@ public class ExecutorController {
         path = "/scripts/{id}",
         consumes = MediaType.TEXT_PLAIN_VALUE)
   public ResponseEntity<ScriptId> executeScriptAsyncByDefault(@PathVariable(name = "id") String scriptId,
-                                                              @RequestBody byte[] body,
+                                                              @RequestBody byte[] source,
                                                               TimeZone timeZone) {
-    return executeScriptAsync(scriptId, body, timeZone);
+    return executeScriptAsync(scriptId, source, timeZone);
   }
 
   @PutMapping(
@@ -105,9 +101,9 @@ public class ExecutorController {
         params = "blocking=true",
         consumes = MediaType.TEXT_PLAIN_VALUE)
   public ResponseEntity<StreamingResponseBody> executeScriptWithBlocking(@PathVariable(name = "id") String scriptId,
-                                                                         @RequestBody byte[] body,
+                                                                         @RequestBody byte[] source,
                                                                          TimeZone timeZone) {
-    boolean created = service.createScript(scriptId, body, timeZone);
+    boolean created = service.createScript(scriptId, source, timeZone);
     StreamingResponseBody responseBody = outputStream -> service.executeScript(scriptId, outputStream);
     return (created)
           ? ResponseEntity.created(linkTo(methodOn(getClass()).getScript(scriptId)).withRel("self").toUri())
