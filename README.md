@@ -28,7 +28,7 @@ Before observing the metrics do the following:
 * running_time_seconds_max (max running time);
 * running_time_seconds{quantile="0.0"} (min running time);
 
-All available metrics you can find via the link: http://localhost:8080/actuator/prometheus
+Other available metrics you can find via the link: http://localhost:8080/actuator/prometheus
 
 **Prometheus**
 
