@@ -4,6 +4,7 @@ import static impl.service.PagingAndSortingService.getSortedPage;
 
 import impl.repositories.ScriptRepository;
 import impl.repositories.entities.Script;
+import impl.repositories.exceptions.UnknownIdException;
 import impl.shared.ScriptStatus;
 import impl.shared.ScriptInfo;
 import impl.service.exceptions.DeletionException;
@@ -77,7 +78,7 @@ public class ScriptExecServiceImpl implements ScriptExecService {
   }
 
   @Override
-  public synchronized void deleteScript(String id) {
+  public void deleteScript(String id) {
     if(isNotFinished(repo.getScript(id).getStatus())) {
       throw new DeletionException(id);
     }
@@ -93,9 +94,11 @@ public class ScriptExecServiceImpl implements ScriptExecService {
   }
 
   private void checkScriptForCompleteness(String id) {
-    if(repo.contains(id) && isNotFinished(repo.getScript(id).getStatus())) {
-      throw new DeletionException(id);
-    }
+    try {
+      if(isNotFinished(repo.getScript(id).getStatus())) {
+        throw new DeletionException(id);
+      }
+    } catch (UnknownIdException ignored) { }
   }
 
   private boolean isNotFinished(ScriptStatus status) {

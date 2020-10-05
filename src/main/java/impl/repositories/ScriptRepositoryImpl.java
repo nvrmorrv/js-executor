@@ -39,9 +39,4 @@ public class ScriptRepositoryImpl implements ScriptRepository {
   public List<Script> getScripts() {
     return new ArrayList<>(map.values());
   }
-
-  @Override
-  public boolean contains(String scriptId) {
-    return map.containsKey(scriptId);
-  }
 }

@@ -13,8 +13,6 @@ public interface ScriptRepository {
   void removeScript(String scriptId);
 
   List<Script> getScripts();
-
-  boolean contains(String scriptId);
 }
 
 

@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import impl.repositories.ScriptRepository;
+import impl.repositories.exceptions.UnknownIdException;
 import impl.shared.ScriptInfo;
 import impl.shared.ScriptStatus;
 import impl.repositories.entities.Script;
@@ -55,14 +56,13 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldPassOnCreatingScript() {
-    Mockito.when(repo.contains(SCRIPT_ID)).thenReturn(false);
+    Mockito.when(repo.getScript(SCRIPT_ID)).thenThrow(new UnknownIdException(SCRIPT_ID));
     Mockito.when(repo.addOrUpdateScript(Mockito.eq(SCRIPT_ID), Mockito.any())).thenReturn(true);
     assertTrue(service.createScript(SCRIPT_ID, SOURCE, TIME_ZONE));
   }
 
   @Test
   public void shouldPassOnUpdatingScript() {
-    Mockito.when(repo.contains(SCRIPT_ID)).thenReturn(true);
     Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(mockScript);
     Mockito.when(mockScript.getStatus()).thenReturn(ScriptStatus.DONE);
     Mockito.when(repo.addOrUpdateScript(Mockito.eq(SCRIPT_ID), Mockito.any())).thenReturn(false);
@@ -71,7 +71,6 @@ public class ScriptExecServiceImplTest {
 
   @Test
   public void shouldFailOnUpdatingNotFinishedScript() {
-    Mockito.when(repo.contains(SCRIPT_ID)).thenReturn(true);
     Mockito.when(repo.getScript(SCRIPT_ID)).thenReturn(mockScript);
     Mockito.when(mockScript.getStatus()).thenReturn(ScriptStatus.RUNNING);
     assertThatThrownBy(() -> service.createScript(SCRIPT_ID, SOURCE, TIME_ZONE))
