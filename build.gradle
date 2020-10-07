@@ -39,6 +39,11 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-hateoas'
     implementation 'org.springframework.data:spring-data-commons'
     implementation 'org.springframework.boot:spring-boot-starter-aop'
+
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    implementation 'org.springframework.security:spring-security-test'
+
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.zalando:problem-spring-web-starter:0.25.2'
     implementation 'org.graalvm.js:js:20.2.0'
