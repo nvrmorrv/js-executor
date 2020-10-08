@@ -8,6 +8,8 @@ public interface Script {
 
   String getId();
 
+  String getOwner();
+
   ScriptStatus getStatus();
 
   byte[] getSource();

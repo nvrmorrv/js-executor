@@ -14,6 +14,7 @@ public class ResponseMapper {
   public static CommonScriptResp getCommonStatusResp(ScriptInfo info) {
     return new CommonScriptResp(
           info.getId(),
+          info.getOwner(),
           info.getStatus().name(),
           info.getCreateTime().format(formatter),
           getStringFromDate(info.getStartTime()),
@@ -23,6 +24,7 @@ public class ResponseMapper {
   public static ExceptionScriptResp getExceptionStatusResp(ScriptInfo info) {
     return new ExceptionScriptResp(
           info.getId(),
+          info.getOwner(),
           info.getStatus().name(),
           info.getCreateTime().format(formatter),
           getStringFromDate(info.getStartTime()),

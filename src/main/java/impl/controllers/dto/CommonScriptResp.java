@@ -11,6 +11,7 @@ import org.springframework.hateoas.server.core.Relation;
 @Relation(collectionRelation = "scripts")
 public class CommonScriptResp extends ScriptResp {
   private final String id;
+  private final String owner;
   private final String status;
   private final String createTime;
   private final String startTime;

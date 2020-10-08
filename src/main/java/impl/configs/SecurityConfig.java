@@ -6,11 +6,12 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 
 @Configuration
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
   @Override
   public void configure(HttpSecurity http) throws Exception {
     http
           .antMatcher("/**").authorizeRequests()
-          .antMatchers("/", "/actuator/**", "/swagger-ui/**").permitAll()
+          .antMatchers("/", "/scripts","/actuator/**", "/swagger-ui/**").permitAll()
           .anyRequest().authenticated()
           .and()
           .oauth2Login();

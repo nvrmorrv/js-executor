@@ -11,6 +11,7 @@ import lombok.Getter;
 @Getter
 public class ScriptInfo implements Serializable {
   private final String id;
+  private final String owner;
   private final ScriptStatus status;
   private final ZonedDateTime createTime;
   private final Optional<ZonedDateTime> startTime;

@@ -9,7 +9,7 @@ import org.springframework.data.domain.Pageable;
 
 public interface ScriptExecService {
 
-  boolean createScript(String id, byte[] source, TimeZone timeZone);
+  boolean createScript(String id, String owner, byte[] source, TimeZone timeZone);
 
   void executeScriptAsync(String id);
 

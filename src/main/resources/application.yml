@@ -23,6 +23,7 @@ spring:
 
 executor:
   lang: "js"
+  admin-emails: den98lev@gmail.com
 
 springdoc:
   swagger-ui:

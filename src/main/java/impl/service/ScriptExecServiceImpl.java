@@ -38,9 +38,9 @@ public class ScriptExecServiceImpl implements ScriptExecService {
   }
 
   @Override
-  public synchronized boolean createScript(String id, byte[] source, TimeZone timeZone) {
+  public synchronized boolean createScript(String id, String owner, byte[] source, TimeZone timeZone) {
     checkScriptForCompleteness(id);
-    Script script = new ScriptImpl(lang, id, source, timeZone);
+    Script script = new ScriptImpl(lang, id, owner, source, timeZone);
     return repo.addOrUpdateScript(id, script);
   }
 

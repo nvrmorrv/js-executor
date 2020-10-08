@@ -26,6 +26,8 @@ public class ScriptImpl implements Script {
   @Getter
   private final String id;
   @Getter
+  private final String owner;
+  @Getter
   private final byte[] source;
   @Getter
   private ScriptStatus status = ScriptStatus.QUEUE;
@@ -40,11 +42,12 @@ public class ScriptImpl implements Script {
   private final CompletableFuture<Runnable> ctCreation = new CompletableFuture<>();
   private final String lang;
 
-  public ScriptImpl(String lang, String id, byte[] source, TimeZone timeZone) {
+  public ScriptImpl(String lang, String id, String owner, byte[] source, TimeZone timeZone) {
     this.lang = lang;
     this.source = source;
     checkScript();
     this.id = id;
+    this.owner = owner;
     this.timeZone = timeZone;
     this.createTime = ZonedDateTime.now(timeZone.toZoneId());
   }
@@ -71,6 +74,7 @@ public class ScriptImpl implements Script {
     lock.readLock().lock();
     ScriptInfo info = new ScriptInfo(
           id,
+          owner,
           status,
           createTime,
           Optional.ofNullable(startTime),

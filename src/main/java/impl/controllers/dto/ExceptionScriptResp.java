@@ -11,6 +11,7 @@ import java.util.List;
 @Setter
 public class ExceptionScriptResp extends ScriptResp {
   private final String id;
+  private final String owner;
   private final String status;
   private final String createTime;
   private final String startTime;

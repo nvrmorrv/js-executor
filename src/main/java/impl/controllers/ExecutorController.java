@@ -9,10 +9,12 @@ import static org.springframework.web.servlet.mvc.method.annotation.MvcUriCompon
 import impl.controllers.dto.*;
 import impl.controllers.exceptions.CancellationException;
 import impl.controllers.utils.CommonStatusRespAssembler;
+import impl.security.ScriptRecourseAccess;
 import impl.service.ScriptExecService;
 import impl.shared.ScriptInfo;
 import impl.shared.ScriptStatus;
 
+import java.security.Principal;
 import java.util.Collections;
 import java.util.List;
 import java.util.TimeZone;
@@ -28,6 +30,7 @@ import org.springframework.hateoas.Link;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
@@ -44,7 +47,7 @@ public class ExecutorController {
           .contentType(MediaType.APPLICATION_JSON)
           .body(CollectionModel.of(
                 Collections.emptyList(),
-                linkTo(methodOn(getClass()).getScripts(null, null, null)).withRel("scripts"),
+                linkTo(methodOn(getClass()).getScripts(null, null,  null)).withRel("scripts"),
                 linkTo(methodOn(getClass()).getRoot()).withSelfRel()));
   }
 
@@ -72,10 +75,12 @@ public class ExecutorController {
         path = "/scripts/{id}",
         params = "blocking=false",
         consumes = MediaType.TEXT_PLAIN_VALUE)
+  @ScriptRecourseAccess
   public ResponseEntity<ScriptId> executeScriptAsync(@PathVariable(name = "id") String scriptId,
                                                      @RequestBody byte[] source,
-                                                     TimeZone timeZone) {
-    boolean created = service.createScript(scriptId, source, timeZone);
+                                                     TimeZone timeZone,
+                                                     Principal principal) {
+    boolean created = service.createScript(scriptId, getOwnerEmail(principal), source, timeZone);
     service.executeScriptAsync(scriptId);
     ScriptId resp = getScriptId(scriptId);
     return (created)
@@ -90,20 +95,24 @@ public class ExecutorController {
   @PutMapping(
         path = "/scripts/{id}",
         consumes = MediaType.TEXT_PLAIN_VALUE)
+  @ScriptRecourseAccess
   public ResponseEntity<ScriptId> executeScriptAsyncByDefault(@PathVariable(name = "id") String scriptId,
                                                               @RequestBody byte[] source,
-                                                              TimeZone timeZone) {
-    return executeScriptAsync(scriptId, source, timeZone);
+                                                              TimeZone timeZone,
+                                                              Principal principal) {
+    return executeScriptAsync(scriptId, source, timeZone, principal);
   }
 
   @PutMapping(
         path = "/scripts/{id}",
         params = "blocking=true",
         consumes = MediaType.TEXT_PLAIN_VALUE)
+  @ScriptRecourseAccess
   public ResponseEntity<StreamingResponseBody> executeScriptWithBlocking(@PathVariable(name = "id") String scriptId,
                                                                          @RequestBody byte[] source,
-                                                                         TimeZone timeZone) {
-    boolean created = service.createScript(scriptId, source, timeZone);
+                                                                         TimeZone timeZone,
+                                                                         Principal principal) {
+    boolean created = service.createScript(scriptId, getOwnerEmail(principal), source, timeZone);
     StreamingResponseBody responseBody = outputStream -> service.executeScript(scriptId, outputStream);
     return (created)
           ? ResponseEntity.created(linkTo(methodOn(getClass()).getScript(scriptId)).withRel("self").toUri())
@@ -115,6 +124,7 @@ public class ExecutorController {
   }
 
   @GetMapping("/scripts/{id}")
+  @ScriptRecourseAccess
   public ResponseEntity<ScriptResp> getScript(@PathVariable(name = "id") String scriptId) {
     ScriptInfo info = service.getScriptInfo(scriptId);
     ScriptResp resp = getStatusResp(info);
@@ -129,6 +139,7 @@ public class ExecutorController {
   }
 
   @PatchMapping("/scripts/{id}")
+  @ScriptRecourseAccess
   public ResponseEntity<ScriptId> cancelExecution(@RequestBody CancelReq req,
                                                   @PathVariable(name = "id") String scriptId) {
     if(!req.getStatus().equals(ScriptStatus.CANCELLED.name())){
@@ -141,19 +152,26 @@ public class ExecutorController {
   }
 
   @DeleteMapping("/scripts/{id}")
+  @ScriptRecourseAccess
   public ResponseEntity<?> deleteScript(@PathVariable(name = "id") String scriptId) {
     service.deleteScript(scriptId);
     return ResponseEntity.noContent().build();
   }
 
   @GetMapping("/scripts/{id}/source")
+  @ScriptRecourseAccess
   public ResponseEntity<byte[]> getScriptSource(@PathVariable(name = "id") String scriptId) {
     return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(service.getScriptSource(scriptId));
   }
 
   @GetMapping("/scripts/{id}/output")
+  @ScriptRecourseAccess
   public ResponseEntity<byte[]> getScriptOutput(@PathVariable(name = "id") String scriptId) {
     return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(service.getScriptOutput(scriptId));
+  }
+
+  private String getOwnerEmail(Principal principal) {
+    return ((OAuth2AuthenticationToken)principal).getPrincipal().getAttribute("email");
   }
 
   private Link getBlockExecLink(String id) {
