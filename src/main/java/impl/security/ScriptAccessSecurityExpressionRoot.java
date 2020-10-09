@@ -46,13 +46,19 @@ public class ScriptAccessSecurityExpressionRoot
     return target;
   }
 
-  public boolean hasPermission(String scriptId) {
-    String principalEmail = ((OAuth2AuthenticationToken)getAuthentication())
+  public boolean isAdmin() {
+    return adminEmails.contains(getPrincipalEmail());
+  }
+
+  public boolean isOwner(String scriptId) {
+    return isUnknown(scriptId) ||
+          repo.getScript(scriptId).getOwner().equals(getPrincipalEmail());
+  }
+
+  private String getPrincipalEmail() {
+    return ((OAuth2AuthenticationToken)getAuthentication())
           .getPrincipal()
           .getAttribute("email");
-    return adminEmails.contains(principalEmail) ||
-          isUnknown(scriptId) ||
-          repo.getScript(scriptId).getOwner().equals(principalEmail);
   }
 
   private boolean isUnknown(String id) {

@@ -8,6 +8,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
-@PreAuthorize("hasPermission(#scriptId)")
+@PreAuthorize("isAdmin() or isOwner(#scriptId)")
 public @interface ScriptRecourseAccess {
 }
