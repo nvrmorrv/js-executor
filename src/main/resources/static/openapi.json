@@ -569,7 +569,28 @@
       }
     }
   },
+  "security": [
+    {
+      "oAuthLogin": [
+        "email"
+      ]
+    }
+  ],
   "components": {
+    "securitySchemes": {
+      "oAuthLogin": {
+        "type": "oauth2",
+        "description": "This API uses OAuth 2 with the implicit grant flow",
+        "flows": {
+          "implicit": {
+            "authorizationUrl": "http://localhost:8080/oauth2/authorization/google",
+            "scopes": {
+              "email": "Read user information"
+            }
+          }
+        }
+      }
+    },
     "schemas": {
       "ScriptsResp" : {
         "type": "object",

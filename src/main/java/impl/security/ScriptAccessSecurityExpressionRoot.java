@@ -6,7 +6,8 @@ import java.util.Set;
 import org.springframework.security.access.expression.SecurityExpressionRoot;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionOperations;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 public class ScriptAccessSecurityExpressionRoot
   extends SecurityExpressionRoot implements MethodSecurityExpressionOperations {
@@ -51,22 +52,14 @@ public class ScriptAccessSecurityExpressionRoot
   }
 
   public boolean isOwner(String scriptId) {
-    return isUnknown(scriptId) ||
-          repo.getScript(scriptId).getOwner().equals(getPrincipalEmail());
+    try {
+      return repo.getScript(scriptId).getOwner().equals(getPrincipalEmail());
+    } catch (UnknownIdException ex) {
+      return true;
+    }
   }
 
   private String getPrincipalEmail() {
-    return ((OAuth2AuthenticationToken)getAuthentication())
-          .getPrincipal()
-          .getAttribute("email");
-  }
-
-  private boolean isUnknown(String id) {
-    try {
-      repo.getScript(id);
-      return false;
-    } catch (UnknownIdException exception) {
-      return true;
-    }
+    return (String) ((JwtAuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getTokenAttributes().get("email");
   }
 }

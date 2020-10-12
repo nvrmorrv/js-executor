@@ -6,19 +6,16 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 import static org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder.fromController;
 
-import impl.controllers.dto.*;
+import impl.controllers.dto.CancelReq;
+import impl.controllers.dto.CommonScriptResp;
+import impl.controllers.dto.ScriptId;
+import impl.controllers.dto.ScriptResp;
 import impl.controllers.exceptions.CancellationException;
 import impl.controllers.utils.CommonStatusRespAssembler;
 import impl.security.ScriptRecourseAccess;
 import impl.service.ScriptExecService;
 import impl.shared.ScriptInfo;
 import impl.shared.ScriptStatus;
-
-import java.security.Principal;
-import java.util.Collections;
-import java.util.List;
-import java.util.TimeZone;
-import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,9 +27,22 @@ import org.springframework.hateoas.Link;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+
+import java.security.Principal;
+import java.util.Collections;
+import java.util.List;
+import java.util.TimeZone;
+import java.util.stream.Collectors;
 
 @RestController
 @AllArgsConstructor
@@ -107,7 +117,6 @@ public class ExecutorController {
         path = "/scripts/{id}",
         params = "blocking=true",
         consumes = MediaType.TEXT_PLAIN_VALUE)
-  @ScriptRecourseAccess
   public ResponseEntity<StreamingResponseBody> executeScriptWithBlocking(@PathVariable(name = "id") String scriptId,
                                                                          @RequestBody byte[] source,
                                                                          TimeZone timeZone,
@@ -171,7 +180,7 @@ public class ExecutorController {
   }
 
   private String getOwnerEmail(Principal principal) {
-    return ((OAuth2AuthenticationToken)principal).getPrincipal().getAttribute("email");
+    return (String) ((JwtAuthenticationToken) principal).getTokenAttributes().get("email");
   }
 
   private Link getBlockExecLink(String id) {

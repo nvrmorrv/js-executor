@@ -14,12 +14,9 @@ spring:
       request-timeout: -1
   security:
     oauth2:
-      client:
-        registration:
-          google:
-            client-id: 664648248047-a5gjsnegpd7pbvkcp0o0kd8v29974o55.apps.googleusercontent.com
-            client-secret: ZXgvi3q6HSSATx4p7Mv7LoqB
-
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8084/auth/realms/blah
 
 executor:
   lang: "js"
